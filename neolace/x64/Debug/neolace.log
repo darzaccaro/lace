@@ -1,5 +1,12 @@
 ﻿  main.c
-c:\users\dar zaccaro\projects\neolace\neolace\main.c(110): warning C4090: 'function': different 'const' qualifiers
-c:\users\dar zaccaro\projects\neolace\neolace\main.c(188): warning C4133: 'function': incompatible types - from 'long *' to 'u64 *'
-c:\users\dar zaccaro\projects\neolace\neolace\main.c(245): warning C4028: formal parameter 3 different from declaration
+c:\program files (x86)\windows kits\10\include\10.0.17134.0\ucrt\corecrt_math_defines.h(22): warning C4005: 'M_PI': macro redefinition
+  c:\devlibs\sdl2\include\sdl_stdinc.h(499): note: see previous definition of 'M_PI'
+c:\users\dar zaccaro\projects\neolace\neolace\main.c(185): warning C4090: 'function': different 'const' qualifiers
+c:\users\dar zaccaro\projects\neolace\neolace\main.c(239): warning C4244: 'function': conversion from 'const i32' to 'float', possible loss of data
+c:\users\dar zaccaro\projects\neolace\neolace\main.c(233): warning C4305: 'initializing': truncation from 'double' to 'float'
+c:\users\dar zaccaro\projects\neolace\neolace\main.c(235): warning C4305: 'initializing': truncation from 'double' to 'float'
+c:\users\dar zaccaro\projects\neolace\neolace\main.c(237): warning C4305: 'initializing': truncation from 'double' to 'float'
+c:\users\dar zaccaro\projects\neolace\neolace\main.c(241): warning C4305: 'initializing': truncation from 'double' to 'float'
+c:\users\dar zaccaro\projects\neolace\neolace\main.c(327): warning C4133: 'function': incompatible types - from 'long *' to 'u64 *'
+c:\users\dar zaccaro\projects\neolace\neolace\main.c(384): warning C4028: formal parameter 3 different from declaration
   neolace.vcxproj -> C:\Users\Dar Zaccaro\Projects\neolace\x64\Debug\neolace.exe

@@ -29,12 +29,14 @@ void main() {
 	pal[6] = to_normalized_float(vec3(90, 55, 28));
 	pal[7] = to_normalized_float(vec3(132, 106, 56));
 	pal[8] = to_normalized_float(vec3(229, 226, 219));
-	uv *= 1.5;
-	uv = clamp(pow(uv,vec2(2.)), 2., float(abs(sin(t * 0.01)) * 128));
+
+	uv *= 200.0;
+	uv = clamp(pow(uv,vec2(2.)), 2., float(abs(sin(t * 0.01))  * 98));
 	uv = pow(uv, vec2(2.));
-	uv += vec2(sin(t * 0.25) * 4., cos(t * 0.5) * 4.);
+	
+	uv += vec2(sin(t * 4.25) * 4., cos(t * 0.5) * 4.);
 	uv.x = pow(uv.x, 2.0);
-	vec3 c = pal[int(int(2.0+t + abs(sin(uv.x)) + 0.5 * abs(sin(uv.y * t * 0.3)) + 0.5 * 0.2) % num_colors)];
+	vec3 c = pal[int(int(2.0+(t*1.0) + abs(sin(uv.x)) + 0.8 * abs(sin(uv.y * t * 0.3)) + 0.8 * 0.8) % num_colors)];
 	c += mix(pal[0], pal[1], vec3(sin(t * 8.0))) * vec3(0.1, 0.12, 0.123);
 	//if (t > 4.0)
 	//	c = pal[0];

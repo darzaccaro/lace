@@ -78,11 +78,11 @@
     <LibraryPath>C:\DevLibs\SDL2\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>C:\DevLibs\glew\include\;C:\DevLibs\SDL2\include;$(IncludePath)</IncludePath>
+    <IncludePath>C:\DevLibs\cglm\include;C:\DevLibs\glew\include\;C:\DevLibs\SDL2\include;$(IncludePath)</IncludePath>
     <LibraryPath>C:\DevLibs\glew\lib\Release\x64;C:\DevLibs\SDL2\lib\x64;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>C:\DevLibs\glew\include\;C:\DevLibs\SDL2\include;$(IncludePath)</IncludePath>
+    <IncludePath>C:\DevLibs\cglm\include;C:\DevLibs\glew\include\;C:\DevLibs\SDL2\include;$(IncludePath)</IncludePath>
     <LibraryPath>C:\DevLibs\glew\lib\Release\x64;C:\DevLibs\SDL2\lib\x64;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
