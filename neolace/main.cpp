@@ -52,11 +52,16 @@ struct Camera {
 	float far_clipping_plane = 100000.0f;
 	float field_of_view = 45.0f;
 	mat4 view, projection;
-
+	float last_mouse_x;
+	float last_mouse_y;
+	float pitch = 0;
+	float yaw = 0;
+	int mouse_x;
+	int mouse_y;
 	Camera(int window_width, int window_height) {
 		speed = 0.5f;
-		position = vec3(3.0f, 3.0f, 8.0f);
-		front = vec3(0.0f, 0.0f, -1.0f);
+		position = vec3(-8.0f, 2.0f, 4.0f);
+		front = vec3(0.0f, 0.0f, 0.0f);
 		target = vec3(0.0f, 0.0f, 0.0f);
 		direction = normalize(position - target);
 		auto tmp_up = vec3(0.0f, 1.0f, 0.0f);
@@ -65,21 +70,56 @@ struct Camera {
 		//up = vec3(0.0f, 1.0f, 0.0f);
 		view = lookAt(position, position + front, up);
 		projection = perspective(radians(field_of_view), float(window_width) / float(window_height), near_clipping_plane, far_clipping_plane);
+		last_mouse_x = window_width / 2;
+		last_mouse_y = window_height / 2;
+		mouse_x = last_mouse_x;
+		mouse_y = last_mouse_y;
+		front.x = cos(radians(pitch)) * cos(radians(yaw));
+		front.y = sin(radians(pitch));
+		front.z = cos(radians(pitch)) * sin(radians(yaw));
+		front = normalize(front);
 
 	}
 
 	void update(int window_width, int window_height, const u8* keystate) {
+		// TODO pull the mouse state call out of the camera function?
+
+		
+		float xoff = float(mouse_x) - last_mouse_x;
+		float yoff = last_mouse_y - float(mouse_y);
+		last_mouse_x = float(mouse_x);
+		last_mouse_y = float(mouse_y);
+		float sensitivity = 0.5f;
+		xoff *= sensitivity;
+		yoff *= sensitivity;
+		yaw += xoff;
+		pitch += yoff;
+		clamp(pitch, -89.0f, 89.0f);
+		
+		if (SDL_GetMouseState(&mouse_x, &mouse_y)  & SDL_BUTTON(SDL_BUTTON_RIGHT)) {
+			front.x = cos(radians(pitch)) * cos(radians(yaw));
+			front.y = sin(radians(pitch));
+			front.z = cos(radians(pitch)) * sin(radians(yaw));
+			front = normalize(front);
+		}
+		if (SDL_GetMouseState(&mouse_x, &mouse_y)  & SDL_BUTTON(SDL_BUTTON_LEFT)) {
+			printf("Camera Position: (%f, %f, %f)\n", position.x, position.y, position.z);
+			printf("Camera Front: (%f, %f, %f)\n", front.x, front.y, front.z);
+		}
+
+
+
 		if (keystate[SDL_SCANCODE_A] && !keystate[SDL_SCANCODE_D]) {
-			position.x -= speed;
+			position += speed * normalize(cross(up, front));
 		}
 		if (keystate[SDL_SCANCODE_D] && !keystate[SDL_SCANCODE_A]) {
-			position.x += speed;
+			position -= speed * normalize(cross(up, front));
 		}
 		if (keystate[SDL_SCANCODE_W] && !keystate[SDL_SCANCODE_S]) {
-			position.z -= speed;
+			position += speed * front;
 		}
 		if (keystate[SDL_SCANCODE_S] && !keystate[SDL_SCANCODE_W]) {
-			position.z += speed;
+			position -= speed * front;
 		}
 		view = lookAt(position, position + front, up);
 		projection = perspective(radians(field_of_view), float(window_width) / float(window_height), near_clipping_plane, far_clipping_plane);
@@ -278,7 +318,7 @@ int main(int argc, char *argv[]) {
 					glViewport(0, 0, window_width, window_height);
 					if (fullscreen) SDL_ShowCursor(0);
 					else SDL_ShowCursor(1);
-					
+
 				}
 				else if (key == SDLK_r) {
 					u32 tmp;
@@ -323,14 +363,14 @@ int main(int argc, char *argv[]) {
 			model_c = scale(model_c, vec3(0.9f, 0.9f, 0.9f));
 			model_d = translate(model_d, vec3(0.0f, -1.0f, 1.0f));
 			model_d = scale(model_d, vec3(0.4f, 0.4f, 0.4f));
-			
+
 		}
 		camera.update(window_width, window_height, keystate);
 		light.position = camera.position;
-		
+
 		model_a = rotate(model_a, 0.1f, vec3(1.0, 0.0, 0.3));
-		
-		
+
+
 		glDisable(GL_DEPTH_TEST);
 		glUseProgram(test_program);
 		glBindVertexArray(plane_vao);
@@ -338,7 +378,7 @@ int main(int argc, char *argv[]) {
 		set_uniform_uint(test_program, "frame_count", frame_count);
 		set_uniform_uint(test_program, "scene", scene);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
-		
+
 		glEnable(GL_DEPTH_TEST);
 		glUseProgram(cube_program);
 		glBindVertexArray(cube_vao);
@@ -353,16 +393,11 @@ int main(int argc, char *argv[]) {
 		set_uniform_mat4(cube_program, "view", camera.view);
 		set_uniform_mat4(cube_program, "projection", camera.projection);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
-		
+
 		set_uniform_mat4(cube_program, "model", model_b);
 		set_uniform_int(cube_program, "offset", 1);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 
-		
-		set_uniform_mat4(cube_program, "model", model_c);
-		set_uniform_int(cube_program, "offset", 2);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
-		
 		set_uniform_mat4(cube_program, "model", model_d);
 		set_uniform_int(cube_program, "offset", 3);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
