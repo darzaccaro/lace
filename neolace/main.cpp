@@ -43,7 +43,6 @@ struct Material {
 struct Camera {
 	float speed;
 	vec3 position;
-	vec3 direction;
 	vec3 target;
 	vec3 right;
 	vec3 up;
@@ -52,62 +51,60 @@ struct Camera {
 	float far_clipping_plane = 100000.0f;
 	float field_of_view = 45.0f;
 	mat4 view, projection;
-	float last_mouse_x;
-	float last_mouse_y;
+
 	float pitch = 0;
 	float yaw = 0;
 	int mouse_x;
 	int mouse_y;
+	int last_mouse_x;
+	int last_mouse_y;
+	bool first_press = true;
 	Camera(int window_width, int window_height) {
 		speed = 0.5f;
-		position = vec3(-8.0f, 2.0f, 4.0f);
-		front = vec3(0.0f, 0.0f, 0.0f);
+		position = vec3(16.007597, -6.704812, 40.265041);
 		target = vec3(0.0f, 0.0f, 0.0f);
-		direction = normalize(position - target);
+		front = normalize(position - target);
 		auto tmp_up = vec3(0.0f, 1.0f, 0.0f);
-		right = normalize(cross(tmp_up, direction));
-		up = cross(direction, right);
-		//up = vec3(0.0f, 1.0f, 0.0f);
-		view = lookAt(position, position + front, up);
+		right = normalize(cross(tmp_up, front));
+		up = cross(front, right);
+		view = lookAt(position, position+front, up);
 		projection = perspective(radians(field_of_view), float(window_width) / float(window_height), near_clipping_plane, far_clipping_plane);
-		last_mouse_x = window_width / 2;
-		last_mouse_y = window_height / 2;
-		mouse_x = last_mouse_x;
-		mouse_y = last_mouse_y;
-		front.x = cos(radians(pitch)) * cos(radians(yaw));
-		front.y = sin(radians(pitch));
-		front.z = cos(radians(pitch)) * sin(radians(yaw));
-		front = normalize(front);
+
 
 	}
 
 	void update(int window_width, int window_height, const u8* keystate) {
 		// TODO pull the mouse state call out of the camera function?
 
-		
-		float xoff = float(mouse_x) - last_mouse_x;
-		float yoff = last_mouse_y - float(mouse_y);
-		last_mouse_x = float(mouse_x);
-		last_mouse_y = float(mouse_y);
-		float sensitivity = 0.5f;
-		xoff *= sensitivity;
-		yoff *= sensitivity;
-		yaw += xoff;
-		pitch += yoff;
-		clamp(pitch, -89.0f, 89.0f);
-		
-		if (SDL_GetMouseState(&mouse_x, &mouse_y)  & SDL_BUTTON(SDL_BUTTON_RIGHT)) {
-			front.x = cos(radians(pitch)) * cos(radians(yaw));
-			front.y = sin(radians(pitch));
-			front.z = cos(radians(pitch)) * sin(radians(yaw));
-			front = normalize(front);
+		if (SDL_GetMouseState(&mouse_x, &mouse_y) & SDL_BUTTON(SDL_BUTTON_RIGHT)) {
+			if (first_press) {
+				last_mouse_x = mouse_x;
+				last_mouse_y = mouse_y;
+				first_press = false;
+			}
+			float xoff = float(mouse_x) - float(last_mouse_x);
+			float yoff = float(last_mouse_y) - float(mouse_y);
+			last_mouse_x = mouse_x;
+			last_mouse_y = mouse_y;
+			float sensitivity = 0.5f;
+			xoff *= sensitivity;
+			yoff *= sensitivity;
+			yaw += xoff;
+			pitch += yoff;
+			clamp(pitch, -89.0f, 89.0f);
+		} else {
+			first_press = true;
 		}
-		if (SDL_GetMouseState(&mouse_x, &mouse_y)  & SDL_BUTTON(SDL_BUTTON_LEFT)) {
+
+		if (SDL_GetMouseState(NULL, NULL)  & SDL_BUTTON(SDL_BUTTON_LEFT)) {
 			printf("Camera Position: (%f, %f, %f)\n", position.x, position.y, position.z);
 			printf("Camera Front: (%f, %f, %f)\n", front.x, front.y, front.z);
 		}
 
-
+		front.x = cos(radians(pitch)) * cos(radians(yaw));
+		front.y = sin(radians(pitch));
+		front.z = cos(radians(pitch)) * sin(radians(yaw));
+		front = normalize(front);
 
 		if (keystate[SDL_SCANCODE_A] && !keystate[SDL_SCANCODE_D]) {
 			position += speed * normalize(cross(up, front));
@@ -368,9 +365,6 @@ int main(int argc, char *argv[]) {
 		camera.update(window_width, window_height, keystate);
 		light.position = camera.position;
 
-		model_a = rotate(model_a, 0.1f, vec3(1.0, 0.0, 0.3));
-
-
 		glDisable(GL_DEPTH_TEST);
 		glUseProgram(test_program);
 		glBindVertexArray(plane_vao);
@@ -394,13 +388,30 @@ int main(int argc, char *argv[]) {
 		set_uniform_mat4(cube_program, "projection", camera.projection);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 
-		set_uniform_mat4(cube_program, "model", model_b);
-		set_uniform_int(cube_program, "offset", 1);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
+		float t = float(frame_count * 0.2);
+		static int b = 0;
+		if ((frame_count % 10) == 0) {
+			b++;
+		}
+		for (int i = 0; i < 10; i++) {
+			
+			mat4 m = translate(model_a, vec3(4.0f * float(i), 0.0f, 0.0f));
 
-		set_uniform_mat4(cube_program, "model", model_d);
-		set_uniform_int(cube_program, "offset", 3);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
+			for (int ii = 0; ii < 10; ii++) {
+
+				mat4 mb = translate(m, vec3(0.0f, 4.0f * float(ii), 0.0f));
+				//mat4 mbs = scale(mb, vec3(0.0f, 0.0f, abs(sin(t)) * float(ii)));
+
+				
+				if (b % 10 == i || b % 10 == ii) {
+
+					mb = scale(mb, vec3(abs(sin(t)) * 2.0, abs(sin(t)) * 2.0f, abs(sin(t)) * 2.0f));
+				}
+				
+				set_uniform_mat4(cube_program, "model", mb);
+				glDrawArrays(GL_TRIANGLES, 0, 36);
+			}
+		}
 		
 		glBindVertexArray(0);
 		glUseProgram(0);

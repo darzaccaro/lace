@@ -1,6 +1,2 @@
 ﻿  main.cpp
-c:\users\dar zaccaro\projects\neolace\neolace\main.cpp(73): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-c:\users\dar zaccaro\projects\neolace\neolace\main.cpp(74): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
-c:\users\dar zaccaro\projects\neolace\neolace\main.cpp(75): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-c:\users\dar zaccaro\projects\neolace\neolace\main.cpp(76): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
   neolace.vcxproj -> C:\Users\Dar Zaccaro\Projects\neolace\x64\Debug\neolace.exe
