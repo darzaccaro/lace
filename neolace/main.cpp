@@ -61,7 +61,7 @@ struct Camera {
 	bool first_press = true;
 	Camera(int window_width, int window_height) {
 		speed = 0.5f;
-		position = vec3(16.007597, -6.704812, 40.265041);
+		position = vec3(0.0f, 0.0f, -3.0f);
 		target = vec3(0.0f, 0.0f, 0.0f);
 		front = normalize(position - target);
 		auto tmp_up = vec3(0.0f, 1.0f, 0.0f);
@@ -74,7 +74,7 @@ struct Camera {
 	}
 
 	void update(int window_width, int window_height, const u8* keystate) {
-		// TODO pull the mouse state call out of the camera function?
+		// TODO pull the mouse state calls out of the camera function?
 
 		if (SDL_GetMouseState(&mouse_x, &mouse_y) & SDL_BUTTON(SDL_BUTTON_RIGHT)) {
 			if (first_press) {
@@ -184,6 +184,8 @@ int main(int argc, char *argv[]) {
 
 	GLuint test_program = link_opengl_program(compile_opengl_shader("test.vert", GL_VERTEX_SHADER), compile_opengl_shader("test.frag", GL_FRAGMENT_SHADER));
 	GLuint cube_program = link_opengl_program(compile_opengl_shader("cube.vert", GL_VERTEX_SHADER), compile_opengl_shader("cube.frag", GL_FRAGMENT_SHADER));
+	GLuint msaa_program = link_opengl_program(compile_opengl_shader("msaa.vert", GL_VERTEX_SHADER), compile_opengl_shader("msaa.frag", GL_FRAGMENT_SHADER));
+
 	GLuint plane_vao;
 	GLfloat plane_data[] = {
 		// position        //uv
@@ -197,13 +199,25 @@ int main(int argc, char *argv[]) {
 	};
 	glGenVertexArrays(1, &plane_vao);
 	glBindVertexArray(plane_vao);
-	{ // todo add uv vbo
+	{ // todo add normals
 		GLuint position_vbo;
 		glGenBuffers(1, &position_vbo);
 		glBindBuffer(GL_ARRAY_BUFFER, position_vbo);
 		glBufferData(GL_ARRAY_BUFFER, sizeof(plane_data), plane_data, GL_STATIC_DRAW);
 		glEnableVertexAttribArray(glGetAttribLocation(test_program, "position"));
 		glVertexAttribPointer(glGetAttribLocation(test_program, "position"), 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (void*)0);
+		glEnableVertexAttribArray(glGetAttribLocation(msaa_program, "position"));
+		glVertexAttribPointer(glGetAttribLocation(msaa_program, "position"), 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (void*)0);
+
+		GLuint texcoord_vbo;
+		glGenBuffers(1, &texcoord_vbo);
+		glBindBuffer(GL_ARRAY_BUFFER, texcoord_vbo);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(plane_data), plane_data, GL_STATIC_DRAW);
+		glEnableVertexAttribArray(glGetAttribLocation(test_program, "texcoord"));
+		glVertexAttribPointer(glGetAttribLocation(test_program, "texcoord"), 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (void*)(3 * sizeof(GLfloat))); // automatically do these for each shader!!!!!!!!!
+		glEnableVertexAttribArray(glGetAttribLocation(msaa_program, "texcoord"));
+		glVertexAttribPointer(glGetAttribLocation(msaa_program, "texcoord"), 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (void*)(3 * sizeof(GLfloat))); // automatically do these for each shader!!!!!!!!!
+
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
 		glBindVertexArray(0);
 	}
@@ -288,6 +302,28 @@ int main(int argc, char *argv[]) {
 		glBindVertexArray(0);
 	}
 
+	GLuint msaa_fbo;
+	glGenFramebuffers(1, &msaa_fbo);
+	glBindFramebuffer(GL_FRAMEBUFFER, msaa_fbo);
+	uint msaa_texture;
+	glGenTextures(1, &msaa_texture);
+	glBindTexture(GL_TEXTURE_2D, msaa_texture);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, window_width, window_height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);  
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, msaa_texture, 0);
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	GLuint rbo;
+	glGenRenderbuffers(1, &rbo);
+	glBindRenderbuffer(GL_RENDERBUFFER, rbo);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, window_width, window_height);
+
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
+	assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glBindRenderbuffer(GL_RENDERBUFFER, 0);
+
 	auto camera = Camera(window_width, window_height);
 	Light light;
 	light.position = vec3(3.0f, 3.0f, 8.0f);
@@ -299,7 +335,7 @@ int main(int argc, char *argv[]) {
 	material.ambient = vec3(1.0f, 0.5f, 0.31f);
 	material.diffuse = vec3(1.0f, 0.5f, 0.31f);
 	material.specular = vec3(0.5f, 0.5f, 0.5f);
-	material.shine = 32;
+	material.shine = 64;
 
 	for (;;) {
 		SDL_Event event;
@@ -326,6 +362,9 @@ int main(int argc, char *argv[]) {
 					tmp = link_opengl_program(compile_opengl_shader("cube.vert", GL_VERTEX_SHADER), compile_opengl_shader("cube.frag", GL_FRAGMENT_SHADER));
 					glDeleteProgram(cube_program);
 					cube_program = tmp;
+					tmp = link_opengl_program(compile_opengl_shader("msaa.vert", GL_VERTEX_SHADER), compile_opengl_shader("msaa.frag", GL_FRAGMENT_SHADER));
+					glDeleteProgram(msaa_program);
+					msaa_program = tmp;
 				}
 				else if (key == SDLK_0) scene = 0;
 				else if (key == SDLK_1) scene = 1;
@@ -344,38 +383,31 @@ int main(int argc, char *argv[]) {
 			current_time = SDL_GetTicks();
 		} while (current_time - last_time < 16);
 		const u8* keystate = SDL_GetKeyboardState(NULL);
+
+
+		// RENDER
+		glBindFramebuffer(GL_FRAMEBUFFER, msaa_fbo);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		// render
 
-
-
-		static mat4 model_a, model_b, model_c, model_d;
+		static mat4 model_a;
 		if (frame_count == 0) {
-			model_a = model_b = model_c = model_d = mat4(1.0f);
-			model_a = translate(model_a, vec3(0.0f, 1.0f, -1.0f));
-			model_a = scale(model_a, vec3(0.5, 0.5, 0.5));
-			model_b = translate(model_b, vec3(0.0f, -1.0f, -1.0f));
-			model_b = scale(model_b, vec3(0.8f, 0.8f, 0.8f));
-			model_c = translate(model_c, vec3(0.0f, 1.0f, 1.0f));
-			model_c = scale(model_c, vec3(0.9f, 0.9f, 0.9f));
-			model_d = translate(model_d, vec3(0.0f, -1.0f, 1.0f));
-			model_d = scale(model_d, vec3(0.4f, 0.4f, 0.4f));
-
+			model_a = mat4(1.0f);
 		}
 		camera.update(window_width, window_height, keystate);
 		light.position = camera.position;
 
-		glDisable(GL_DEPTH_TEST);
+
 		glUseProgram(test_program);
 		glBindVertexArray(plane_vao);
+		glDisable(GL_DEPTH_TEST);
 		set_uniform_vec2(test_program, "resolution", (float)window_width, (float)window_height);
 		set_uniform_uint(test_program, "frame_count", frame_count);
 		set_uniform_uint(test_program, "scene", scene);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 
-		glEnable(GL_DEPTH_TEST);
 		glUseProgram(cube_program);
 		glBindVertexArray(cube_vao);
+		glEnable(GL_DEPTH_TEST);
 		set_uniform_material(cube_program, "material", material);
 		set_uniform_light(cube_program, "light", light);
 		set_uniform_vec2(cube_program, "resolution", (float)window_width, (float)window_height);
@@ -393,12 +425,11 @@ int main(int argc, char *argv[]) {
 		if ((frame_count % 10) == 0) {
 			b++;
 		}
+
 		for (int i = 0; i < 10; i++) {
-			
 			mat4 m = translate(model_a, vec3(4.0f * float(i), 0.0f, 0.0f));
 
 			for (int ii = 0; ii < 10; ii++) {
-
 				mat4 mb = translate(m, vec3(0.0f, 4.0f * float(ii), 0.0f));
 				//mat4 mbs = scale(mb, vec3(0.0f, 0.0f, abs(sin(t)) * float(ii)));
 
@@ -413,6 +444,17 @@ int main(int argc, char *argv[]) {
 			}
 		}
 		
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glClear(GL_COLOR_BUFFER_BIT);
+		glUseProgram(msaa_program);
+		glBindVertexArray(plane_vao);
+		glDisable(GL_DEPTH_TEST);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, msaa_texture);
+
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+
+
 		glBindVertexArray(0);
 		glUseProgram(0);
 		SDL_GL_SwapWindow(window);
