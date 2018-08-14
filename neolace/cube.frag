@@ -62,5 +62,4 @@ void main() {
 	float t = float(frame_count) * 0.001;
 	
 	frag_color = vec4(calculate_lighting(), 1.0);
-	//frag_color = vec4(1.0);
 }

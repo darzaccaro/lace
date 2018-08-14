@@ -154,31 +154,27 @@ int main(int argc, char *argv[]) {
 
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 5);
-	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
-	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
-
+	/*SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
+	SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
+	SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
+	SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 8);
+	//SDL_GL_SetAttribute(SDL_GL_BUFFER_SIZE, 32);
+	//SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 16);
+	SDL_GL_SetAttribute	(SDL_GL_DOUBLEBUFFER, 1);
+	//SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
+	//SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
+	*/
+	SDL_GL_SetSwapInterval(1);
 	window = SDL_CreateWindow(title, SDL_WINDOWPOS_CENTERED, 0, window_width, window_height, SDL_WINDOW_OPENGL|SDL_WINDOW_ALWAYS_ON_TOP|SDL_WINDOW_BORDERLESS);
 	assert(window);
 
 	glcontext = SDL_GL_CreateContext(window);
 	assert(glcontext);
-	glEnable(GL_MULTISAMPLE);
-	glDepthFunc(GL_LESS);
-	//glEnable(GL_BLEND);
-	//glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	//glHint( GL_LINE_SMOOTH_HINT, GL_NICEST );
-    //glHint( GL_POLYGON_SMOOTH_HINT, GL_NICEST );
-    //glEnable( GL_LINE_SMOOTH );
-   	//glEnable( GL_POLYGON_SMOOTH );
-   	//glDisable( GL_MULTISAMPLE );
 
 	err = glewInit();
 	if (GLEW_OK != err) {
 		printf("Error: %s\n", glewGetErrorString(err));
 	}
-	// TODO print sdl version
-	// TODO print opengl version
-	// TODO print current working directory
 	SDL_VERSION(&compiled);
 	SDL_GetVersion(&linked);
 	printf("Compiled against SDL version %d.%d.%d\n", compiled.major, compiled.minor, compiled.patch);
@@ -187,12 +183,23 @@ int main(int argc, char *argv[]) {
 	printf("Using GLEW version: %s\n", glewGetString(GLEW_VERSION));
 	printf("Running %s demo from: %s\n", title, SDL_GetBasePath());
 
+	//glEnable(GL_MULTISAMPLE);
+	glDepthFunc(GL_LEQUAL);
+	//glEnable(GL_BLEND);
+	//glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	//glHint( GL_LINE_SMOOTH_HINT, GL_NICEST );
+	//glHint( GL_POLYGON_SMOOTH_HINT, GL_NICEST );
+	//glEnable( GL_LINE_SMOOTH );
+	//glEnable( GL_POLYGON_SMOOTH );
+	//glDisable( GL_MULTISAMPLE );
+
 	glViewport(0, 0, window_width, window_height);
 	glClearColor(0.2456f, 0.5432f, 0.23f, 1.0f);
 
 	GLuint test_program = link_opengl_program(compile_opengl_shader("test.vert", GL_VERTEX_SHADER), compile_opengl_shader("test.frag", GL_FRAGMENT_SHADER));
 	GLuint cube_program = link_opengl_program(compile_opengl_shader("cube.vert", GL_VERTEX_SHADER), compile_opengl_shader("cube.frag", GL_FRAGMENT_SHADER));
 	GLuint post_program = link_opengl_program(compile_opengl_shader("post.vert", GL_VERTEX_SHADER), compile_opengl_shader("post.frag", GL_FRAGMENT_SHADER));
+	GLuint fxaa_program = link_opengl_program(compile_opengl_shader("post.vert", GL_VERTEX_SHADER), compile_opengl_shader("fxaa.frag", GL_FRAGMENT_SHADER));
 
 	GLuint plane_vao;
 	GLfloat plane_data[] = {
@@ -216,6 +223,8 @@ int main(int argc, char *argv[]) {
 		glVertexAttribPointer(glGetAttribLocation(test_program, "position"), 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (void*)0);
 		glEnableVertexAttribArray(glGetAttribLocation(post_program, "position"));
 		glVertexAttribPointer(glGetAttribLocation(post_program, "position"), 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (void*)0);
+		glEnableVertexAttribArray(glGetAttribLocation(fxaa_program, "position"));
+		glVertexAttribPointer(glGetAttribLocation(fxaa_program, "position"), 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (void*)0);
 
 		GLuint texcoord_vbo;
 		glGenBuffers(1, &texcoord_vbo);
@@ -225,6 +234,9 @@ int main(int argc, char *argv[]) {
 		glVertexAttribPointer(glGetAttribLocation(test_program, "texcoord"), 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (void*)(3 * sizeof(GLfloat))); // automatically do these for each shader!!!!!!!!!
 		glEnableVertexAttribArray(glGetAttribLocation(post_program, "texcoord"));
 		glVertexAttribPointer(glGetAttribLocation(post_program, "texcoord"), 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (void*)(3 * sizeof(GLfloat))); // automatically do these for each shader!!!!!!!!!
+		glEnableVertexAttribArray(glGetAttribLocation(fxaa_program, "texcoord"));
+		glVertexAttribPointer(glGetAttribLocation(fxaa_program, "texcoord"), 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (void*)(3 * sizeof(GLfloat))); // automatically do these for each shader!!!!!!!!!
+
 
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
 		glBindVertexArray(0);
@@ -285,6 +297,7 @@ int main(int argc, char *argv[]) {
 	glGenVertexArrays(1, &cube_vao);
 	glBindVertexArray(cube_vao);
 	{ 
+		// TODO: automatically enable these vertex attrib pointers for each shader in your engine!
 		GLuint position_vbo;
 		glGenBuffers(1, &position_vbo);
 		glBindBuffer(GL_ARRAY_BUFFER, position_vbo);
@@ -310,10 +323,10 @@ int main(int argc, char *argv[]) {
 		glBindVertexArray(0);
 	}
 
-	GLuint post_fbo;
+	GLuint post_fbo, post_fbo_depth_buffer;
 	glGenFramebuffers(1, &post_fbo);
 	glBindFramebuffer(GL_FRAMEBUFFER, post_fbo);
-	uint post_texture;
+	GLuint post_texture;
 	glGenTextures(1, &post_texture);
 	glBindTexture(GL_TEXTURE_2D, post_texture);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, window_width, window_height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
@@ -321,23 +334,27 @@ int main(int argc, char *argv[]) {
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);  
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, post_texture, 0);
 	glBindTexture(GL_TEXTURE_2D, 0);
-
-	// TODO: FXAA anti-aliasing is simpler!
-	
-	GLuint rbo; // this is our multisample render target???? what is the fucking point of this versus the msaa_fbo?
-	glGenRenderbuffers(1, &rbo);
-	glBindRenderbuffer(GL_RENDERBUFFER, rbo);
-	glRenderbufferStorageMultisample(GL_RENDERBUFFER, 4, GL_DEPTH24_STENCIL8, window_width, window_height);
-	glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
-	
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glGenRenderbuffers(1, &post_fbo_depth_buffer);
+	glBindRenderbuffer(GL_RENDERBUFFER, post_fbo_depth_buffer);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, window_width, window_height);
 	glBindRenderbuffer(GL_RENDERBUFFER, 0);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, post_fbo_depth_buffer);
 
 
+	GLuint fxaa_fbo;
+	glGenFramebuffers(1, &fxaa_fbo);
+	glBindFramebuffer(GL_FRAMEBUFFER, fxaa_fbo);
+	GLuint fxaa_texture;
+	glGenTextures(1, &fxaa_texture);
+	glBindTexture(GL_TEXTURE_2D, fxaa_texture);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, window_width, window_height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);  
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, fxaa_texture, 0);
+	glBindTexture(GL_TEXTURE_2D, 0);
 
-	
-	glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	//glClearDepth(1.0);
 
 	auto camera = Camera(window_width, window_height);
 	Light light;
@@ -371,6 +388,7 @@ int main(int argc, char *argv[]) {
 				else if (key == SDLK_r) {
 					u32 tmp;
 					SDL_Delay(100);
+					// TODO: code compression
 					tmp = link_opengl_program(compile_opengl_shader("test.vert", GL_VERTEX_SHADER), compile_opengl_shader("test.frag", GL_FRAGMENT_SHADER));
 					glDeleteProgram(test_program);
 					test_program = tmp;
@@ -380,6 +398,11 @@ int main(int argc, char *argv[]) {
 					tmp = link_opengl_program(compile_opengl_shader("post.vert", GL_VERTEX_SHADER), compile_opengl_shader("post.frag", GL_FRAGMENT_SHADER));
 					glDeleteProgram(post_program);
 					post_program = tmp;
+					tmp = link_opengl_program(compile_opengl_shader("post.vert", GL_VERTEX_SHADER), compile_opengl_shader("fxaa.frag", GL_FRAGMENT_SHADER));
+					glDeleteProgram(fxaa_program);
+					post_program = tmp;
+					
+					
 				}
 				else if (key == SDLK_0) scene = 0;
 				else if (key == SDLK_1) scene = 1;
@@ -401,8 +424,8 @@ int main(int argc, char *argv[]) {
 
 
 		// RENDER
+		//glBindRenderbuffer(GL_RENDERBUFFER, rbo);
 		glBindFramebuffer(GL_FRAMEBUFFER, post_fbo);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		static mat4 model_a;
 		if (frame_count == 0) {
@@ -411,18 +434,17 @@ int main(int argc, char *argv[]) {
 		camera.update(window_width, window_height, keystate);
 		light.position = camera.position;
 
-
 		glUseProgram(test_program);
 		glBindVertexArray(plane_vao);
-		glDisable(GL_DEPTH_TEST);
 		set_uniform_vec2(test_program, "resolution", (float)window_width, (float)window_height);
 		set_uniform_uint(test_program, "frame_count", frame_count);
 		set_uniform_uint(test_program, "scene", scene);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 
+		glEnable(GL_DEPTH_TEST);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glUseProgram(cube_program);
 		glBindVertexArray(cube_vao);
-		glEnable(GL_DEPTH_TEST);
 		set_uniform_material(cube_program, "material", material);
 		set_uniform_light(cube_program, "light", light);
 		set_uniform_vec2(cube_program, "resolution", (float)window_width, (float)window_height);
@@ -433,7 +455,7 @@ int main(int argc, char *argv[]) {
 		set_uniform_mat4(cube_program, "model", model_a);
 		set_uniform_mat4(cube_program, "view", camera.view);
 		set_uniform_mat4(cube_program, "projection", camera.projection);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
+		//glDrawArrays(GL_TRIANGLES, 0, 36);
 
 		float t = float(frame_count * 0.2);
 		static int b = 0;
@@ -441,37 +463,47 @@ int main(int argc, char *argv[]) {
 			b++;
 		}
 
-		for (int i = 0; i < 10; i++) {
-			mat4 m = translate(model_a, vec3(4.0f * float(i), 0.0f, 0.0f));
+		for (int i = 0; i < 100; i++) {
+			mat4 m = translate(model_a, vec3(8.0f * float(i), 0.0f, 0.0f));
 
 			for (int ii = 0; ii < 10; ii++) {
-				mat4 mb = translate(m, vec3(0.0f, 4.0f * float(ii), 0.0f));
-				//mat4 mbs = scale(mb, vec3(0.0f, 0.0f, abs(sin(t)) * float(ii)));
+				mat4 mb = scale(m, vec3(float(ii)));
+				//mb = rotate(mb, radians(1.0f), vec3(0.0f, sin(float(ii)), 0.0f));
+				mb = translate(mb, vec3(0.0f, 4.0f * float(ii) / 2.0f, 0.0f));
 
-				
+				/*
 				if (b % 10 == i || b % 10 == ii) {
 
 					mb = scale(mb, vec3(abs(sin(t)) * 2.0, abs(sin(t)) * 2.0f, abs(sin(t)) * 2.0f));
 				}
-				
+				*/
 				set_uniform_mat4(cube_program, "model", mb);
 				glDrawArrays(GL_TRIANGLES, 0, 36);
 			}
 		}
 		
+		// post processing ----------------------------------
+		// TODO: just delete the render buffer object that you created earlier, because you aren't using it???
 
-		// TODO: just delete the render buffer object that you created earlier, because you aren't using it
 
 		
-		glBindFramebuffer(GL_FRAMEBUFFER, 0); // i guess this is where we should use the renderbuffer, if we really want to
-		glClear(GL_COLOR_BUFFER_BIT);
+		
+		glActiveTexture(GL_TEXTURE0);
+		glBindFramebuffer(GL_FRAMEBUFFER, fxaa_fbo);
+		glDisable(GL_DEPTH_TEST);
 		glUseProgram(post_program);
 		glBindVertexArray(plane_vao);
-		glDisable(GL_DEPTH_TEST);
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, post_texture); // we need an empty shader here??????
-
+		glBindTexture(GL_TEXTURE_2D, post_texture);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
+		
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glUseProgram(fxaa_program);
+		glBindVertexArray(plane_vao);
+		// todo: we could just do this in the shader, given the screen resolution as a uniform vec2
+		set_uniform_vec3(fxaa_program, "inverse_filter_texture_size", 1.0f / float(window_width), 1.0f / float(window_height), 0.0f);
+		glBindTexture(GL_TEXTURE_2D, fxaa_texture);
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+		
 
 		glBindVertexArray(0);
 		glUseProgram(0);
