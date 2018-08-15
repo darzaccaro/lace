@@ -91,7 +91,12 @@ struct Camera {
 			yoff *= sensitivity;
 			yaw += xoff;
 			pitch += yoff;
-			clamp(pitch, -89.0f, 89.0f);
+			if (pitch < -89.0f) pitch = -89.0f;
+			if (pitch >  89.0f) pitch = 89.0f;
+			front.x += cos(radians(pitch)) * cos(radians(yaw));
+			front.y += sin(radians(pitch));
+			front.z += cos(radians(pitch)) * sin(radians(yaw));
+			front = normalize(front);
 		} else {
 			first_press = true;
 		}
@@ -101,10 +106,7 @@ struct Camera {
 			printf("Camera Front: (%f, %f, %f)\n", front.x, front.y, front.z);
 		}
 
-		front.x = cos(radians(pitch)) * cos(radians(yaw));
-		front.y = sin(radians(pitch));
-		front.z = cos(radians(pitch)) * sin(radians(yaw));
-		front = normalize(front);
+
 
 		if (keystate[SDL_SCANCODE_A] && !keystate[SDL_SCANCODE_D]) {
 			position += speed * normalize(cross(up, front));
@@ -136,14 +138,80 @@ void set_uniform_mat4(GLuint program, const char* attr, mat4 m);
 void set_uniform_light(GLuint program, const char* attr, struct Light light);
 void set_uniform_material(GLuint program, const char* attr, struct Material material);
 
+static int SEED = 0;
+
+static int hash[] = { 208,34,231,213,32,248,233,56,161,78,24,140,71,48,140,254,245,255,247,247,40,
+185,248,251,245,28,124,204,204,76,36,1,107,28,234,163,202,224,245,128,167,204,
+9,92,217,54,239,174,173,102,193,189,190,121,100,108,167,44,43,77,180,204,8,81,
+70,223,11,38,24,254,210,210,177,32,81,195,243,125,8,169,112,32,97,53,195,13,
+203,9,47,104,125,117,114,124,165,203,181,235,193,206,70,180,174,0,167,181,41,
+164,30,116,127,198,245,146,87,224,149,206,57,4,192,210,65,210,129,240,178,105,
+228,108,245,148,140,40,35,195,38,58,65,207,215,253,65,85,208,76,62,3,237,55,89,
+232,50,217,64,244,157,199,121,252,90,17,212,203,149,152,140,187,234,177,73,174,
+193,100,192,143,97,53,145,135,19,103,13,90,135,151,199,91,239,247,33,39,145,
+101,120,99,3,186,86,99,41,237,203,111,79,220,135,158,42,30,154,120,67,87,167,
+135,176,183,191,253,115,184,21,233,58,129,233,142,39,128,211,118,137,139,255,
+114,20,218,113,154,27,127,246,250,1,8,198,250,209,92,222,173,21,88,102,219 };
+
+int noise2(int x, int y)
+{
+	int tmp = hash[(y + SEED) % 256];
+	return hash[(tmp + x) % 256];
+}
+
+float linear_interp(float x, float y, float s)
+{
+	return x + s * (y - x);
+}
+
+float smooth_interp(float x, float y, float s)
+{
+	return linear_interp(x, y, s * s * (3 - 2 * s));
+}
+
+float noise2d(float x, float y)
+{
+	int xi = x;
+	int yi = y;
+	float xf = x - xi;
+	float yf = y - yi;
+	int s = noise2(xi, yi);
+	int t = noise2(xi + 1, yi);
+	int u = noise2(xi, yi + 1);
+	int v = noise2(xi + 1, yi + 1);
+	float low = smooth_interp(s, t, xf);
+	float high = smooth_interp(y, v, xf);
+	return smooth_interp(low, high, yf);
+}
+
+float perlin2d(float x, float y, float freq, int depth)
+{
+	float xa = x * freq;
+	float ya = y * freq;
+	float amp = 1;
+	float fin = 0;
+	float div = 0;
+
+	int i;
+	for (i = 0; i < depth; i++) {
+		div += 256 * amp;
+		fin += noise2d(xa, ya) * amp;
+		amp /= 2;
+		xa *= 2;
+		ya *= 2;
+	}
+	return fin / div;
+}
+
+
 int main(int argc, char *argv[]) {
 	SDL_Window *window = NULL;
 	SDL_GLContext glcontext;
 	GLenum err;
 	SDL_version compiled, linked;
 	const char *title = "neolace demo";
-	i32 window_width = 1280/2;
-	i32 window_height = 720/2;
+	i32 window_width = 1280;// / 2;
+	i32 window_height = 720;// / 2;
 	u32 current_time = 0;
 	u32 last_time = 0;
 	bool fullscreen = false;
@@ -154,16 +222,16 @@ int main(int argc, char *argv[]) {
 
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 5);
-	/*SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
+	SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
 	SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
 	SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
 	SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 8);
-	//SDL_GL_SetAttribute(SDL_GL_BUFFER_SIZE, 32);
-	//SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 16);
+	SDL_GL_SetAttribute(SDL_GL_BUFFER_SIZE, 32);
+	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 16);
 	SDL_GL_SetAttribute	(SDL_GL_DOUBLEBUFFER, 1);
-	//SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
-	//SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
-	*/
+	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
+	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
+	
 	SDL_GL_SetSwapInterval(1);
 	window = SDL_CreateWindow(title, SDL_WINDOWPOS_CENTERED, 0, window_width, window_height, SDL_WINDOW_OPENGL|SDL_WINDOW_ALWAYS_ON_TOP|SDL_WINDOW_BORDERLESS);
 	assert(window);
@@ -183,20 +251,13 @@ int main(int argc, char *argv[]) {
 	printf("Using GLEW version: %s\n", glewGetString(GLEW_VERSION));
 	printf("Running %s demo from: %s\n", title, SDL_GetBasePath());
 
-	//glEnable(GL_MULTISAMPLE);
+	glEnable(GL_MULTISAMPLE); // TODO: do we have to do this after we bind our fbo?
 	glDepthFunc(GL_LEQUAL);
-	//glEnable(GL_BLEND);
-	//glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	//glHint( GL_LINE_SMOOTH_HINT, GL_NICEST );
-	//glHint( GL_POLYGON_SMOOTH_HINT, GL_NICEST );
-	//glEnable( GL_LINE_SMOOTH );
-	//glEnable( GL_POLYGON_SMOOTH );
-	//glDisable( GL_MULTISAMPLE );
 
 	glViewport(0, 0, window_width, window_height);
 	glClearColor(0.2456f, 0.5432f, 0.23f, 1.0f);
 
-	GLuint test_program = link_opengl_program(compile_opengl_shader("test.vert", GL_VERTEX_SHADER), compile_opengl_shader("test.frag", GL_FRAGMENT_SHADER));
+	GLuint background_program = link_opengl_program(compile_opengl_shader("background.vert", GL_VERTEX_SHADER), compile_opengl_shader("background.frag", GL_FRAGMENT_SHADER));
 	GLuint cube_program = link_opengl_program(compile_opengl_shader("cube.vert", GL_VERTEX_SHADER), compile_opengl_shader("cube.frag", GL_FRAGMENT_SHADER));
 	GLuint post_program = link_opengl_program(compile_opengl_shader("post.vert", GL_VERTEX_SHADER), compile_opengl_shader("post.frag", GL_FRAGMENT_SHADER));
 	GLuint fxaa_program = link_opengl_program(compile_opengl_shader("post.vert", GL_VERTEX_SHADER), compile_opengl_shader("fxaa.frag", GL_FRAGMENT_SHADER));
@@ -219,8 +280,8 @@ int main(int argc, char *argv[]) {
 		glGenBuffers(1, &position_vbo);
 		glBindBuffer(GL_ARRAY_BUFFER, position_vbo);
 		glBufferData(GL_ARRAY_BUFFER, sizeof(plane_data), plane_data, GL_STATIC_DRAW);
-		glEnableVertexAttribArray(glGetAttribLocation(test_program, "position"));
-		glVertexAttribPointer(glGetAttribLocation(test_program, "position"), 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (void*)0);
+		glEnableVertexAttribArray(glGetAttribLocation(background_program, "position"));
+		glVertexAttribPointer(glGetAttribLocation(background_program, "position"), 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (void*)0);
 		glEnableVertexAttribArray(glGetAttribLocation(post_program, "position"));
 		glVertexAttribPointer(glGetAttribLocation(post_program, "position"), 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (void*)0);
 		glEnableVertexAttribArray(glGetAttribLocation(fxaa_program, "position"));
@@ -230,8 +291,8 @@ int main(int argc, char *argv[]) {
 		glGenBuffers(1, &texcoord_vbo);
 		glBindBuffer(GL_ARRAY_BUFFER, texcoord_vbo);
 		glBufferData(GL_ARRAY_BUFFER, sizeof(plane_data), plane_data, GL_STATIC_DRAW);
-		glEnableVertexAttribArray(glGetAttribLocation(test_program, "texcoord"));
-		glVertexAttribPointer(glGetAttribLocation(test_program, "texcoord"), 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (void*)(3 * sizeof(GLfloat))); // automatically do these for each shader!!!!!!!!!
+		glEnableVertexAttribArray(glGetAttribLocation(background_program, "texcoord"));
+		glVertexAttribPointer(glGetAttribLocation(background_program, "texcoord"), 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (void*)(3 * sizeof(GLfloat))); // automatically do these for each shader!!!!!!!!!
 		glEnableVertexAttribArray(glGetAttribLocation(post_program, "texcoord"));
 		glVertexAttribPointer(glGetAttribLocation(post_program, "texcoord"), 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (void*)(3 * sizeof(GLfloat))); // automatically do these for each shader!!!!!!!!!
 		glEnableVertexAttribArray(glGetAttribLocation(fxaa_program, "texcoord"));
@@ -353,8 +414,21 @@ int main(int argc, char *argv[]) {
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, fxaa_texture, 0);
 	glBindTexture(GL_TEXTURE_2D, 0);
 
+	GLuint msaa_fbo, msaa_texture, msaa_rbo;
+	glGenTextures(1, &msaa_texture);
+	glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msaa_texture);
+	glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 4, GL_RGB, window_width, window_height, GL_TRUE);
+	glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
+	glGenFramebuffers(1, &msaa_fbo);
+	glBindFramebuffer(GL_FRAMEBUFFER, msaa_fbo);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, msaa_texture, 0);
+	// TODO: error check fbo status
+	glGenRenderbuffers(1, &msaa_rbo);
+	glBindRenderbuffer(GL_RENDERBUFFER, msaa_rbo);
+	glRenderbufferStorageMultisample(GL_RENDERBUFFER, 4, GL_DEPTH24_STENCIL8, window_width, window_height);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, msaa_rbo);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	//glClearDepth(1.0);
+	glBindRenderbuffer(GL_RENDERBUFFER, 0);
 
 	auto camera = Camera(window_width, window_height);
 	Light light;
@@ -389,9 +463,9 @@ int main(int argc, char *argv[]) {
 					u32 tmp;
 					SDL_Delay(100);
 					// TODO: code compression
-					tmp = link_opengl_program(compile_opengl_shader("test.vert", GL_VERTEX_SHADER), compile_opengl_shader("test.frag", GL_FRAGMENT_SHADER));
-					glDeleteProgram(test_program);
-					test_program = tmp;
+					tmp = link_opengl_program(compile_opengl_shader("background.vert", GL_VERTEX_SHADER), compile_opengl_shader("background.frag", GL_FRAGMENT_SHADER));
+					glDeleteProgram(background_program);
+					background_program = tmp;
 					tmp = link_opengl_program(compile_opengl_shader("cube.vert", GL_VERTEX_SHADER), compile_opengl_shader("cube.frag", GL_FRAGMENT_SHADER));
 					glDeleteProgram(cube_program);
 					cube_program = tmp;
@@ -401,8 +475,8 @@ int main(int argc, char *argv[]) {
 					tmp = link_opengl_program(compile_opengl_shader("post.vert", GL_VERTEX_SHADER), compile_opengl_shader("fxaa.frag", GL_FRAGMENT_SHADER));
 					glDeleteProgram(fxaa_program);
 					post_program = tmp;
-					
-					
+
+
 				}
 				else if (key == SDLK_0) scene = 0;
 				else if (key == SDLK_1) scene = 1;
@@ -424,8 +498,7 @@ int main(int argc, char *argv[]) {
 
 
 		// RENDER
-		//glBindRenderbuffer(GL_RENDERBUFFER, rbo);
-		glBindFramebuffer(GL_FRAMEBUFFER, post_fbo);
+		glBindFramebuffer(GL_FRAMEBUFFER, msaa_fbo); // todo: msaa in the post_fbo??
 
 		static mat4 model_a;
 		if (frame_count == 0) {
@@ -433,16 +506,22 @@ int main(int argc, char *argv[]) {
 		}
 		camera.update(window_width, window_height, keystate);
 		light.position = camera.position;
-
-		glUseProgram(test_program);
+		static bool did_once = false;
+		if (!did_once) {
+			camera.position = vec3(271.979553, -4.139664, 113.563263);
+			camera.front = vec3(-0.034846, 0.990268, -0.134740); // TODO: why doesn't this work???
+			did_once = true;
+		}
+		glDisable(GL_DEPTH_TEST);
+		glUseProgram(background_program);
 		glBindVertexArray(plane_vao);
-		set_uniform_vec2(test_program, "resolution", (float)window_width, (float)window_height);
-		set_uniform_uint(test_program, "frame_count", frame_count);
-		set_uniform_uint(test_program, "scene", scene);
+		set_uniform_vec2(background_program, "resolution", (float)window_width, (float)window_height);
+		set_uniform_uint(background_program, "frame_count", frame_count);
+		set_uniform_uint(background_program, "scene", scene);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 
 		glEnable(GL_DEPTH_TEST);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glClear(GL_DEPTH_BUFFER_BIT);
 		glUseProgram(cube_program);
 		glBindVertexArray(cube_vao);
 		set_uniform_material(cube_program, "material", material);
@@ -465,45 +544,59 @@ int main(int argc, char *argv[]) {
 
 		for (int i = 0; i < 100; i++) {
 			mat4 m = translate(model_a, vec3(8.0f * float(i), 0.0f, 0.0f));
+			const int iimax = 100;
+			for (int ii = 0; ii < iimax; ii++) {
+				mat4 mb = scale(m, vec3(1.0f));
+				mb = translate(mb, vec3(float(ii % 4) * 2.0f, 4.0f * float(ii) / 2.0f, float(ii % 8) * 2.0f * perlin2d(float(i), float(ii), 0.1f, 4)));
 
-			for (int ii = 0; ii < 10; ii++) {
-				mat4 mb = scale(m, vec3(float(ii)));
-				//mb = rotate(mb, radians(1.0f), vec3(0.0f, sin(float(ii)), 0.0f));
-				mb = translate(mb, vec3(0.0f, 4.0f * float(ii) / 2.0f, 0.0f));
-
-				/*
-				if (b % 10 == i || b % 10 == ii) {
-
-					mb = scale(mb, vec3(abs(sin(t)) * 2.0, abs(sin(t)) * 2.0f, abs(sin(t)) * 2.0f));
-				}
-				*/
 				set_uniform_mat4(cube_program, "model", mb);
+				set_uniform_float(cube_program, "brightness", perlin2d(float(i), float(ii), 0.1f, 4));
 				glDrawArrays(GL_TRIANGLES, 0, 36);
 			}
 		}
-		
+
 		// post processing ----------------------------------
 		// TODO: just delete the render buffer object that you created earlier, because you aren't using it???
 
 
-		
-		
-		glActiveTexture(GL_TEXTURE0);
-		glBindFramebuffer(GL_FRAMEBUFFER, fxaa_fbo);
-		glDisable(GL_DEPTH_TEST);
-		glUseProgram(post_program);
-		glBindVertexArray(plane_vao);
-		glBindTexture(GL_TEXTURE_2D, post_texture);
-		glDrawArrays(GL_TRIANGLES, 0, 6);
-		
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		glUseProgram(fxaa_program);
-		glBindVertexArray(plane_vao);
-		// todo: we could just do this in the shader, given the screen resolution as a uniform vec2
-		set_uniform_vec3(fxaa_program, "inverse_filter_texture_size", 1.0f / float(window_width), 1.0f / float(window_height), 0.0f);
-		glBindTexture(GL_TEXTURE_2D, fxaa_texture);
-		glDrawArrays(GL_TRIANGLES, 0, 6);
-		
+		if (scene == 0) {
+			glActiveTexture(GL_TEXTURE0);
+			glBindFramebuffer(GL_READ_FRAMEBUFFER, msaa_fbo);
+			glBindFramebuffer(GL_DRAW_FRAMEBUFFER, post_fbo);
+			glBlitFramebuffer(0, 0, window_width, window_height, 0, 0, window_width, window_height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+			glDisable(GL_DEPTH_TEST);
+			glUseProgram(post_program);
+			glBindVertexArray(plane_vao);
+			glBindTexture(GL_TEXTURE_2D, post_texture);
+			glDrawArrays(GL_TRIANGLES, 0, 6);
+		}
+		else if (scene == 1) {
+			glActiveTexture(GL_TEXTURE0);
+			glBindFramebuffer(GL_FRAMEBUFFER, fxaa_fbo);
+			glDisable(GL_DEPTH_TEST);
+			glUseProgram(post_program);
+			glBindVertexArray(plane_vao);
+			glBindTexture(GL_TEXTURE_2D, msaa_texture);
+			glDrawArrays(GL_TRIANGLES, 0, 6);
+
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+			glUseProgram(fxaa_program);
+			glBindVertexArray(plane_vao);
+			set_uniform_vec2(fxaa_program, "resolution", float(window_width), float(window_height));
+			glBindTexture(GL_TEXTURE_2D, fxaa_texture);
+			glDrawArrays(GL_TRIANGLES, 0, 6);
+		} else {
+			glActiveTexture(GL_TEXTURE0);
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+			glDisable(GL_DEPTH_TEST);
+			glUseProgram(post_program);
+			glBindVertexArray(plane_vao);
+			glBindTexture(GL_TEXTURE_2D, post_texture);
+			glDrawArrays(GL_TRIANGLES, 0, 6);
+		}
+
 
 		glBindVertexArray(0);
 		glUseProgram(0);

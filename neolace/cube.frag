@@ -8,6 +8,7 @@ uniform vec2 resolution;
 uniform uint frame_count;
 uniform uint scene;
 uniform int offset;
+uniform float brightness;
 
 in vec3 vert_normal;
 in vec2 vert_texcoord;
@@ -60,6 +61,7 @@ vec3 calculate_lighting() {
 
 void main() {
 	float t = float(frame_count) * 0.001;
-	
-	frag_color = vec4(calculate_lighting(), 1.0);
+	vec3 c = calculate_lighting();
+	c.g += brightness;
+	frag_color = vec4(c, 1.0);
 }
