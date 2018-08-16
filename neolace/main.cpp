@@ -27,7 +27,7 @@ typedef int32_t  i32;
 typedef int64_t  i64;
 
 struct Light {
-	vec3 position;
+	vec4 position;
 	vec3 ambient;
 	vec3 diffuse;
 	vec3 specular;
@@ -60,7 +60,7 @@ struct Camera {
 	int last_mouse_y;
 	bool first_press = true;
 	Camera(int window_width, int window_height) {
-		speed = 0.5f;
+		speed = 2.0f;
 		position = vec3(0.0f, 0.0f, -3.0f);
 		target = vec3(0.0f, 0.0f, 0.0f);
 		front = normalize(position - target);
@@ -210,8 +210,8 @@ int main(int argc, char *argv[]) {
 	GLenum err;
 	SDL_version compiled, linked;
 	const char *title = "neolace demo";
-	i32 window_width = 1280;// / 2;
-	i32 window_height = 720;// / 2;
+	i32 window_width = 1280 / 2;
+	i32 window_height = 720 / 2;
 	u32 current_time = 0;
 	u32 last_time = 0;
 	bool fullscreen = false;
@@ -280,12 +280,18 @@ int main(int argc, char *argv[]) {
 		glGenBuffers(1, &position_vbo);
 		glBindBuffer(GL_ARRAY_BUFFER, position_vbo);
 		glBufferData(GL_ARRAY_BUFFER, sizeof(plane_data), plane_data, GL_STATIC_DRAW);
+		for (Shader s: shaders) {
+			glEnableVertexAttribArray(glGetAttribLocation(s.program, "position"));
+			glVertexAttribPointer(glGetAttribLocation(s.program, "position"), 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (void*)0);
+			
 		glEnableVertexAttribArray(glGetAttribLocation(background_program, "position"));
 		glVertexAttribPointer(glGetAttribLocation(background_program, "position"), 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (void*)0);
 		glEnableVertexAttribArray(glGetAttribLocation(post_program, "position"));
 		glVertexAttribPointer(glGetAttribLocation(post_program, "position"), 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (void*)0);
 		glEnableVertexAttribArray(glGetAttribLocation(fxaa_program, "position"));
 		glVertexAttribPointer(glGetAttribLocation(fxaa_program, "position"), 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (void*)0);
+		glEnableVertexAttribArray(glGetAttribLocation(brightness_mask_program, "position"));
+		glVertexAttribPointer(glGetAttribLocation(brightness_mask_program, "position"), 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (void*)0);
 
 		GLuint texcoord_vbo;
 		glGenBuffers(1, &texcoord_vbo);
@@ -401,18 +407,22 @@ int main(int argc, char *argv[]) {
 	glBindRenderbuffer(GL_RENDERBUFFER, 0);
 	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, post_fbo_depth_buffer);
 
-
-	GLuint fxaa_fbo;
-	glGenFramebuffers(1, &fxaa_fbo);
-	glBindFramebuffer(GL_FRAMEBUFFER, fxaa_fbo);
-	GLuint fxaa_texture;
-	glGenTextures(1, &fxaa_texture);
-	glBindTexture(GL_TEXTURE_2D, fxaa_texture);
+	GLuint brightness_mask_fbo, brightness_mask_fbo_depth_buffer;
+	glGenFramebuffers(1, &brightness_mask_fbo);
+	glBindFramebuffer(GL_FRAMEBUFFER, brightness_mask_fbo);
+	GLuint brightness_mask_texture;
+	glGenTextures(1, &brightness_mask_texture);
+	glBindTexture(GL_TEXTURE_2D, brightness_mask_texture);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, window_width, window_height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);  
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, fxaa_texture, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, brightness_mask_texture, 0);
 	glBindTexture(GL_TEXTURE_2D, 0);
+	glGenRenderbuffers(1, &brightness_mask_fbo_depth_buffer);
+	glBindRenderbuffer(GL_RENDERBUFFER, brightness_mask_fbo_depth_buffer);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, window_width, window_height);
+	glBindRenderbuffer(GL_RENDERBUFFER, 0);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, brightness_mask_fbo_depth_buffer);
 
 	GLuint msaa_fbo, msaa_texture, msaa_rbo;
 	glGenTextures(1, &msaa_texture);
@@ -432,7 +442,7 @@ int main(int argc, char *argv[]) {
 
 	auto camera = Camera(window_width, window_height);
 	Light light;
-	light.position = vec3(3.0f, 3.0f, 8.0f);
+	light.position = vec4(3.0f, 3.0f, 8.0f, 1.0f);
 	light.ambient = vec3(0.2f, 0.2f, 0.2f);
 	light.diffuse = vec3(0.5f, 0.5f, 0.5f);
 	light.specular = vec3(1.0f, 1.0f, 1.0f);
@@ -462,7 +472,7 @@ int main(int argc, char *argv[]) {
 				else if (key == SDLK_r) {
 					u32 tmp;
 					SDL_Delay(100);
-					// TODO: code compression
+					// TODO: code compression... do this automatically for all shaders!
 					tmp = link_opengl_program(compile_opengl_shader("background.vert", GL_VERTEX_SHADER), compile_opengl_shader("background.frag", GL_FRAGMENT_SHADER));
 					glDeleteProgram(background_program);
 					background_program = tmp;
@@ -495,8 +505,6 @@ int main(int argc, char *argv[]) {
 			current_time = SDL_GetTicks();
 		} while (current_time - last_time < 16);
 		const u8* keystate = SDL_GetKeyboardState(NULL);
-
-
 		// RENDER
 		glBindFramebuffer(GL_FRAMEBUFFER, msaa_fbo); // todo: msaa in the post_fbo??
 
@@ -505,11 +513,11 @@ int main(int argc, char *argv[]) {
 			model_a = mat4(1.0f);
 		}
 		camera.update(window_width, window_height, keystate);
-		light.position = camera.position;
+		//light.position = vec4(0.0f, -1.0f, 0.0f, 1.0f); // if w == 0.0, this is a directional light
 		static bool did_once = false;
 		if (!did_once) {
-			camera.position = vec3(271.979553, -4.139664, 113.563263);
-			camera.front = vec3(-0.034846, 0.990268, -0.134740); // TODO: why doesn't this work???
+			//camera.position = vec3(271.979553, -4.139664, 113.563263);
+			//camera.front = vec3(-0.034846, 0.990268, -0.134740); // TODO: why doesn't this work???
 			did_once = true;
 		}
 		glDisable(GL_DEPTH_TEST);
@@ -534,7 +542,6 @@ int main(int argc, char *argv[]) {
 		set_uniform_mat4(cube_program, "model", model_a);
 		set_uniform_mat4(cube_program, "view", camera.view);
 		set_uniform_mat4(cube_program, "projection", camera.projection);
-		//glDrawArrays(GL_TRIANGLES, 0, 36);
 
 		float t = float(frame_count * 0.2);
 		static int b = 0;
@@ -542,22 +549,49 @@ int main(int argc, char *argv[]) {
 			b++;
 		}
 
-		for (int i = 0; i < 100; i++) {
-			mat4 m = translate(model_a, vec3(8.0f * float(i), 0.0f, 0.0f));
-			const int iimax = 100;
-			for (int ii = 0; ii < iimax; ii++) {
-				mat4 mb = scale(m, vec3(1.0f));
-				mb = translate(mb, vec3(float(ii % 4) * 2.0f, 4.0f * float(ii) / 2.0f, float(ii % 8) * 2.0f * perlin2d(float(i), float(ii), 0.1f, 4)));
+		const int maxiter = 8;
+		for (int i = 0; i < maxiter * 4; i++) {
 
-				set_uniform_mat4(cube_program, "model", mb);
+			for (int ii = 0; ii < maxiter; ii++) {
+				
+				mat4 m = translate(model_a, vec3(4.0f * float(i), 8.0f * float(ii), sin(float(ii * 0.2f)) * 32.0f));
+				m = scale(m, vec3(2.0f * perlin2d(float(i), float(ii), 0.8f, 4)));
+			
+				set_uniform_mat4(cube_program, "model", m);
 				set_uniform_float(cube_program, "brightness", perlin2d(float(i), float(ii), 0.1f, 4));
 				glDrawArrays(GL_TRIANGLES, 0, 36);
 			}
 		}
 
-		// post processing ----------------------------------
-		// TODO: just delete the render buffer object that you created earlier, because you aren't using it???
+		//right side of tunnel
+		/*
+		for (int i = 0; i < maxiter * 16; i++) {
 
+			for (int ii = 0; ii < maxiter; ii++) {
+
+				mat4 m = translate(model_a, vec3(3.0f * float(i), 8.0f * float(ii), -sin(float(ii * 0.8f)) * 32.0f));
+				m = scale(m, vec3(4.0f * perlin2d(float(i), float(ii), 0.2f, 4)));
+
+				set_uniform_mat4(cube_program, "model", m);
+				set_uniform_float(cube_program, "brightness", perlin2d(float(i), float(ii), 0.1f, 4));
+				glDrawArrays(GL_TRIANGLES, 0, 36);
+			}
+		}
+		*/
+		// TODO use a different shader for this cube
+		{
+			mat4 m = model_a;
+			m = translate(m, vec3(64.0f, 40.0f, -48.0f));
+			m = rotate(m, radians(t), vec3(1.0f, 1.0f, 0.0f));
+			m = scale(m, vec3(24.0f, 24.0f, 24.0f));
+
+			set_uniform_mat4(cube_program, "model", m);
+			set_uniform_float(cube_program, "brightness", 4.0f);
+
+			glDrawArrays(GL_TRIANGLES, 0, 36);
+		}
+
+		// post processing ----------------------------------
 
 		if (scene == 0) {
 			glActiveTexture(GL_TEXTURE0);
@@ -565,27 +599,21 @@ int main(int argc, char *argv[]) {
 			glBindFramebuffer(GL_DRAW_FRAMEBUFFER, post_fbo);
 			glBlitFramebuffer(0, 0, window_width, window_height, 0, 0, window_width, window_height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
-			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 			glDisable(GL_DEPTH_TEST);
-			glUseProgram(post_program);
+			
+			glBindFramebuffer(GL_FRAMEBUFFER, brightness_mask_fbo);
+			glUseProgram(brightness_mask_program);
 			glBindVertexArray(plane_vao);
-			glBindTexture(GL_TEXTURE_2D, post_texture);
-			glDrawArrays(GL_TRIANGLES, 0, 6);
-		}
-		else if (scene == 1) {
 			glActiveTexture(GL_TEXTURE0);
-			glBindFramebuffer(GL_FRAMEBUFFER, fxaa_fbo);
-			glDisable(GL_DEPTH_TEST);
-			glUseProgram(post_program);
-			glBindVertexArray(plane_vao);
-			glBindTexture(GL_TEXTURE_2D, msaa_texture);
+			glBindTexture(GL_TEXTURE_2D, post_texture);
 			glDrawArrays(GL_TRIANGLES, 0, 6);
 
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
-			glUseProgram(fxaa_program);
+			glUseProgram(add_textures_program);
 			glBindVertexArray(plane_vao);
-			set_uniform_vec2(fxaa_program, "resolution", float(window_width), float(window_height));
-			glBindTexture(GL_TEXTURE_2D, fxaa_texture);
+			glBindTexture(GL_TEXTURE_2D, post_texture);
+			glActiveTexture(GL_TEXTURE1);
+			glBindTexture(GL_TEXTURE_2D, brightness_mask_texture);
 			glDrawArrays(GL_TRIANGLES, 0, 6);
 		} else {
 			glActiveTexture(GL_TEXTURE0);
@@ -620,6 +648,10 @@ void set_uniform_vec3(GLuint program, const char* attr, float x, float y, float 
 {
 	glUniform3f(glGetUniformLocation(program, attr), x, y, z);
 }
+void set_uniform_vec4(GLuint program, const char* attr, float x, float y, float z, float w)
+{
+	glUniform4f(glGetUniformLocation(program, attr), x, y, z, w);
+}
 void set_uniform_int(GLuint program, const char* attr, i32 n) 
 {
 	glUniform1i(glGetUniformLocation(program, attr), n);
@@ -643,7 +675,7 @@ void set_uniform_light(GLuint program, const char* attr, Light light)
 	// TODO: assert that string length will never be larger than buffer size
 	char buf[64];
 	sprintf(buf, "%s.position", attr);
-	set_uniform_vec3(program, buf, light.position.x, light.position.y, light.position.z);
+	set_uniform_vec4(program, buf, light.position.x, light.position.y, light.position.z, light.position.w);
 	sprintf(buf, "%s.ambient", attr);
 	set_uniform_vec3(program, buf, light.ambient.x, light.ambient.y, light.ambient.z);
 	sprintf(buf, "%s.diffuse", attr);

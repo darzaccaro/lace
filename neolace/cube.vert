@@ -10,12 +10,12 @@ in vec3 norml;
 
 out vec3 vert_normal;
 out vec2 vert_texcoord;
-out vec3 vert_position;
+out vec4 vert_position;
 
 void main() {
 	vert_normal = norml;
 	vert_texcoord = texcoord;
-	vert_position = position;
+	vert_position = vec4(position, 1.0);
 
 	gl_Position = projection * view * model * vec4(position, 1.0);
 

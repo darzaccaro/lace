@@ -12,12 +12,12 @@ uniform float brightness;
 
 in vec3 vert_normal;
 in vec2 vert_texcoord;
-in vec3 vert_position;
+in vec4 vert_position;
 
 out vec4 frag_color;
 
 uniform struct Light {
-	vec3 position;
+	vec4 position;
 	vec3 ambient;
 	vec3 diffuse;
 	vec3 specular;
@@ -40,13 +40,21 @@ vec3 get_view_position()
 	mat4 inv = inverse(view * model);
 	return vec3(inv[3]);
 }
-vec3 calculate_lighting() {
-	vec3 frag_pos = vec3(model * vec4(vert_position, 1.0));
-	
+
+vec3 calculate_phong_lighting(Light light) {
+	vec3 frag_pos = vec3(model * vert_position);
+
+
 	vec3 ambient = light.ambient * material.ambient;
 
 	vec3 norm = normalize(vert_normal);
-	vec3 light_dir = normalize(light.position - frag_pos);
+	vec3 light_dir;
+	if (light.position.w == 0.0) { // directional light
+		light_dir = -light.position.xyz;
+
+	} else {
+		light_dir = normalize(light.position.xyz - frag_pos); // point light
+	}
 	float diff = max(dot(norm, light_dir), 0.0);
 	vec3 diffuse = light.diffuse * (diff * material.diffuse);
 
@@ -56,12 +64,13 @@ vec3 calculate_lighting() {
 	vec3 specular = light.specular * (spec * material.specular);
 
 	vec3 color = ambient + diffuse + specular;
+
 	return color;
 }
 
 void main() {
 	float t = float(frame_count) * 0.001;
-	vec3 c = calculate_lighting();
+	vec3 c = calculate_phong_lighting(light);
 	c.g += brightness;
 	frag_color = vec4(c, 1.0);
 }

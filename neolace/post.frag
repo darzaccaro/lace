@@ -7,6 +7,5 @@ out vec4 frag_color;
 
 void main() {
 	//redden
-	frag_color = texture(screen_texture, vert_texcoord) * vec4(1.0, 0.5, 0.5, 1.0);
-
+	frag_color = texture(screen_texture, vert_texcoord);
 }
