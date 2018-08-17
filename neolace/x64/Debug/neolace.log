@@ -1,5 +1,5 @@
 ﻿  main.cpp
-c:\users\dar zaccaro\projects\neolace\neolace\main.cpp(351): warning C4101: 'tmp': unreferenced local variable
+c:\users\dar zaccaro\projects\neolace\neolace\main.cpp(347): warning C4101: 'tmp': unreferenced local variable
 c:\users\dar zaccaro\projects\neolace\neolace\noise.cpp(19): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
 c:\users\dar zaccaro\projects\neolace\neolace\noise.cpp(20): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
 c:\users\dar zaccaro\projects\neolace\neolace\noise.cpp(27): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data

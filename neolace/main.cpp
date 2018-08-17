@@ -105,7 +105,7 @@ int main(int argc, char *argv[]) {
 	glViewport(0, 0, window_width, window_height);
 	glClearColor(0.2456f, 0.5432f, 0.23f, 1.0f);
 
-	enum Shader_Name {SN_BACKGROUND, SN_CUBE, SN_POST, SN_FXAA, SN_ADD_TEXTURES, SN_BRIGHTNESS_MASK, SN_BLUR, SN_MAX};
+	enum Shader_Name { SN_BACKGROUND, SN_CUBE, SN_POST, SN_FXAA, SN_ADD_TEXTURES, SN_BRIGHTNESS_MASK, SN_BLUR, SN_MAX };
 	Shader *shaders[SN_MAX];
 	shaders[SN_BACKGROUND] = &Shader("background.vert", "background.frag");
 	shaders[SN_CUBE] = &Shader("cube.vert", "cube.frag");
@@ -134,16 +134,16 @@ int main(int argc, char *argv[]) {
 		glGenBuffers(1, &position_vbo);
 		glBindBuffer(GL_ARRAY_BUFFER, position_vbo);
 		glBufferData(GL_ARRAY_BUFFER, sizeof(plane_data), plane_data, GL_STATIC_DRAW);
-		for (Shader* s: shaders) {
+		for (Shader* s : shaders) {
 			glEnableVertexAttribArray(glGetAttribLocation(s->program, "position"));
 			glVertexAttribPointer(glGetAttribLocation(s->program, "position"), 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (void*)0);
 		}
-		
+
 		GLuint texcoord_vbo;
 		glGenBuffers(1, &texcoord_vbo);
 		glBindBuffer(GL_ARRAY_BUFFER, texcoord_vbo);
 		glBufferData(GL_ARRAY_BUFFER, sizeof(plane_data), plane_data, GL_STATIC_DRAW);
-		for (Shader* s: shaders) {
+		for (Shader* s : shaders) {
 			glEnableVertexAttribArray(glGetAttribLocation(s->program, "texcoord"));
 			glVertexAttribPointer(glGetAttribLocation(s->program, "texcoord"), 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (void*)(3 * sizeof(GLfloat))); // automatically do these for each shader!!!!!!!!!
 		}
@@ -202,17 +202,17 @@ int main(int argc, char *argv[]) {
 		1.0f, 1.0f,-1.0f,   0.0f, 0.0f,   1.0f, 0.0f, 0.0f,
 		1.0f, 1.0f, 1.0f,   0.0f, 1.0f,   1.0f, 0.0f, 0.0f
 	};
-	
+
 	GLuint cube_vao;
 	glGenVertexArrays(1, &cube_vao);
 	glBindVertexArray(cube_vao);
-	{ 
+	{
 		// TODO: automatically enable these vertex attrib pointers for each shader in your engine!
 		GLuint position_vbo;
 		glGenBuffers(1, &position_vbo);
 		glBindBuffer(GL_ARRAY_BUFFER, position_vbo);
 		glBufferData(GL_ARRAY_BUFFER, sizeof(cube_data), cube_data, GL_STATIC_DRAW);
-		for (Shader* s: shaders) {
+		for (Shader* s : shaders) {
 			glEnableVertexAttribArray(glGetAttribLocation(s->program, "position"));
 			glVertexAttribPointer(glGetAttribLocation(s->program, "position"), 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)0);
 		}
@@ -221,16 +221,16 @@ int main(int argc, char *argv[]) {
 		glGenBuffers(1, &texcoord_vbo);
 		glBindBuffer(GL_ARRAY_BUFFER, texcoord_vbo);
 		glBufferData(GL_ARRAY_BUFFER, sizeof(cube_data), cube_data, GL_STATIC_DRAW);
-		for (Shader* s: shaders) {
+		for (Shader* s : shaders) {
 			glEnableVertexAttribArray(glGetAttribLocation(s->program, "texcoord"));
-			glVertexAttribPointer(glGetAttribLocation(s->program, "texcoord"), 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)(3*sizeof(GLfloat)));
+			glVertexAttribPointer(glGetAttribLocation(s->program, "texcoord"), 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)(3 * sizeof(GLfloat)));
 		}
 
 		GLuint norml_vbo;
 		glGenBuffers(1, &norml_vbo);
 		glBindBuffer(GL_ARRAY_BUFFER, norml_vbo);
 		glBufferData(GL_ARRAY_BUFFER, sizeof(cube_data), cube_data, GL_STATIC_DRAW);
-		for (Shader* s: shaders) {
+		for (Shader* s : shaders) {
 			glEnableVertexAttribArray(glGetAttribLocation(s->program, "norml"));
 			glVertexAttribPointer(glGetAttribLocation(s->program, "norml"), 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)(5 * sizeof(GLfloat)));
 		}
@@ -247,7 +247,7 @@ int main(int argc, char *argv[]) {
 	glBindTexture(GL_TEXTURE_2D, post_texture);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, window_width, window_height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);  
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, post_texture, 0);
 	glGenRenderbuffers(1, &post_fbo_depth_buffer);
 	glBindRenderbuffer(GL_RENDERBUFFER, post_fbo_depth_buffer);
@@ -265,7 +265,7 @@ int main(int argc, char *argv[]) {
 	glBindTexture(GL_TEXTURE_2D, brightness_mask_texture);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, window_width, window_height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);  
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, brightness_mask_texture, 0);
 	glBindTexture(GL_TEXTURE_2D, 0);
 	glGenRenderbuffers(1, &brightness_mask_fbo_depth_buffer);
@@ -276,31 +276,27 @@ int main(int argc, char *argv[]) {
 	glBindRenderbuffer(GL_RENDERBUFFER, 0);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-	GLuint blur_fbo, blur_fbo_depth_buffer;
-	glGenFramebuffers(1, &blur_fbo);
-	glBindFramebuffer(GL_FRAMEBUFFER, blur_fbo);
-	GLuint blur_textures[2];
+	GLuint blur_fbos[2], blur_fbo_depth_buffers[2], blur_textures[2];
+	glGenFramebuffers(2, blur_fbos);
 	glGenTextures(2, blur_textures);
-	glBindTexture(GL_TEXTURE_2D, blur_textures[0]);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, window_width, window_height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);  
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, blur_textures[0], 0);
+	glGenRenderbuffers(2, blur_fbo_depth_buffers);
+	for (int i = 0; i < 2; i++) {
+		glBindFramebuffer(GL_FRAMEBUFFER, blur_fbos[i]);
 	
-	glBindTexture(GL_TEXTURE_2D, blur_textures[1]);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, window_width, window_height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);  
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, blur_textures[1], 0);
-	
-	
-	glGenRenderbuffers(1, &blur_fbo_depth_buffer);
-	glBindRenderbuffer(GL_RENDERBUFFER, blur_fbo_depth_buffer);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, window_width, window_height);
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, blur_fbo_depth_buffer);
-	glBindTexture(GL_TEXTURE_2D, 0);
-	glBindRenderbuffer(GL_RENDERBUFFER, 0);
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glBindTexture(GL_TEXTURE_2D, blur_textures[i]);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, window_width, window_height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, blur_textures[i], 0);
+
+		glBindRenderbuffer(GL_RENDERBUFFER, blur_fbo_depth_buffers[i]);
+		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, window_width, window_height);
+		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, blur_fbo_depth_buffers[i]);
+
+		glBindTexture(GL_TEXTURE_2D, 0);
+		glBindRenderbuffer(GL_RENDERBUFFER, 0);
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	}
 
 	GLuint msaa_fbo, msaa_texture, msaa_rbo;
 	glGenTextures(1, &msaa_texture);
@@ -380,7 +376,7 @@ int main(int argc, char *argv[]) {
 			model_a = mat4(1.0f);
 		}
 		camera.update(window_width, window_height, keystate);
-		//light.position = vec4(0.0f, -1.0f, 0.0f, 1.0f); // if w == 0.0, this is a directional light
+		light.position = vec4(57.648369, 34.234070, -54.256927, 1.0); // if w == 0.0, this is a directional light
 		static bool did_once = false;
 		if (!did_once) {
 			//camera.position = vec3(271.979553, -4.139664, 113.563263);
@@ -478,13 +474,13 @@ int main(int argc, char *argv[]) {
 			glDrawArrays(GL_TRIANGLES, 0, 6);
 
 			// TODO pingpong between 2 color attachments instead!!!
-			glBindFramebuffer(GL_FRAMEBUFFER, blur_fbo);
+			glBindFramebuffer(GL_FRAMEBUFFER, blur_fbos[0]);
 			shaders[SN_BLUR]->use();
-			glBindTexture(GL_TEXTURE_2D, blur_textures[0]);
 			shaders[SN_BLUR]->set_texture("tex0", brightness_mask_texture, 0);
 			shaders[SN_BLUR]->set_uniform("horizontal", true);
 			glDrawArrays(GL_TRIANGLES, 0, 6);
-			glBindTexture(GL_TEXTURE_2D, blur_textures[1]);
+
+			glBindFramebuffer(GL_FRAMEBUFFER, blur_fbos[1]);
 			shaders[SN_BLUR]->set_texture("tex0", blur_textures[0], 0);
 			shaders[SN_BLUR]->set_uniform("horizontal", false);
 			glDrawArrays(GL_TRIANGLES, 0, 6);

@@ -71,6 +71,6 @@ vec3 calculate_phong_lighting(Light light) {
 void main() {
 	float t = float(frame_count) * 0.001;
 	vec3 c = calculate_phong_lighting(light);
-	c.g += brightness;
+	c += vec3(brightness);
 	frag_color = vec4(c, 1.0);
 }
