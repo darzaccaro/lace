@@ -5,13 +5,14 @@
 #include <assert.h>
 #include <stdint.h>
 #include <map>
+#include <vector>
 #include <glm.hpp>
 #include <gtc/matrix_transform.hpp>
 using namespace glm;
 
 #pragma warning(disable: 4996)
 
-#define ARRAYCOUNT(array) (sizeof(array) / sizeof(array[0]))
+#define ARRAY_COUNT(array) (sizeof(array) / sizeof(array[0]))
 
 #define KILOBYTES(n) ((unsigned long)(n) * 1024)
 #define MEGABYTES(n) ((unsigned long)KILOBYTES(n) * 1024)
@@ -51,6 +52,7 @@ GLuint link_opengl_program(GLuint vert, GLuint frag);
 #include "noise.h"
 #include "camera.h"
 #include "shader.h"
+#include "vao.h"
 
 int main(int argc, char *argv[]) {
 	SDL_Window *window = NULL;
@@ -58,8 +60,8 @@ int main(int argc, char *argv[]) {
 	GLenum err;
 	SDL_version compiled, linked;
 	const char *title = "neolace demo";
-	i32 window_width = 1280 / 2;
-	i32 window_height = 720 / 2;
+	i32 window_width = 1280;
+	i32 window_height = 720;
 	u32 current_time = 0;
 	u32 last_time = 0;
 	bool fullscreen = false;
@@ -115,7 +117,9 @@ int main(int argc, char *argv[]) {
 	shaders[SN_BRIGHTNESS_MASK] = &Shader("quad.vert", "brightness_mask.frag");
 	shaders[SN_BLUR] = &Shader("quad.vert", "blur.frag");
 
+	auto icosphere_vao = Vao("models/sphere.obj", shaders, SN_MAX);
 
+	
 	GLuint plane_vao;
 	GLfloat plane_data[] = {
 		// position        //uv
@@ -401,7 +405,8 @@ int main(int argc, char *argv[]) {
 		glEnable(GL_DEPTH_TEST); // todo: renderer.enable(GL_DEPTH_TEST); might be overengineering
 		glClear(GL_DEPTH_BUFFER_BIT); // TODO: renderer.clear(GL_COLOR_BUIFFER_BIT | GL_DEPTH_BUFFER_TEST), etc...
 		shaders[SN_CUBE]->use();
-		glBindVertexArray(cube_vao);
+		//glBindVertexArray(cube_vao);
+		icosphere_vao.bind();
 		shaders[SN_CUBE]->set_uniform("material", material);
 		shaders[SN_CUBE]->set_uniform("light", light);
 		shaders[SN_CUBE]->set_uniform("resolution", vec2((float)window_width, (float)window_height));
@@ -426,10 +431,11 @@ int main(int argc, char *argv[]) {
 				
 				mat4 m = translate(model_a, vec3(4.0f * float(i), 8.0f * float(ii), sin(float(ii * 0.2f)) * 32.0f));
 				m = scale(m, vec3(2.0f * perlin2d(float(i), float(ii), 0.8f, 4)));
-			
+				
 				shaders[SN_CUBE]->set_uniform("model", m);
 				shaders[SN_CUBE]->set_uniform("brightness", perlin2d(float(i), float(ii), 0.1f, 4));
-				glDrawArrays(GL_TRIANGLES, 0, 36);
+				//glDrawArrays(GL_TRIANGLES, 0, 36);
+				icosphere_vao.draw(shaders[SN_CUBE]);
 			}
 		}
 
@@ -450,6 +456,7 @@ int main(int argc, char *argv[]) {
 		*/
 		// TODO use a different shader for this cube
 		{
+			icosphere_vao.bind();
 			mat4 m = model_a;
 			m = translate(m, vec3(64.0f, 40.0f, -48.0f));
 			m = rotate(m, radians(t), vec3(1.0f, 1.0f, 0.0f));
@@ -458,7 +465,8 @@ int main(int argc, char *argv[]) {
 			shaders[SN_CUBE]->set_uniform("model", m);
 			shaders[SN_CUBE]->set_uniform("brightness", 4.0f);
 
-			glDrawArrays(GL_TRIANGLES, 0, 36);
+			//			glDrawArrays(GL_TRIANGLES, 0, 36);
+			icosphere_vao.draw(shaders[SN_CUBE]);
 		}
 
 		// post processing ----------------------------------
@@ -477,6 +485,7 @@ int main(int argc, char *argv[]) {
 			glBindFramebuffer(GL_FRAMEBUFFER, brightness_mask_fbo);
 			shaders[SN_BRIGHTNESS_MASK]->use();
 			shaders[SN_BRIGHTNESS_MASK]->set_texture("tex0", post_texture, 0);
+			shaders[SN_BRIGHTNESS_MASK]->set_uniform("resolution", vec2(window_width, window_height));
 			glDrawArrays(GL_TRIANGLES, 0, 6);
 
 			// TODO pingpong between 2 color attachments instead!!!
@@ -604,3 +613,4 @@ void read_file(const char* path, char** data, long* size)
 #include "shader.cpp"
 #include "camera.cpp"
 #include "noise.cpp"
+#include "vao.cpp"

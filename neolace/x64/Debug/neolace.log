@@ -1,7 +1,11 @@
 ﻿  main.cpp
-c:\users\dar zaccaro\projects\neolace\neolace\main.cpp(353): warning C4101: 'tmp': unreferenced local variable
+c:\users\dar zaccaro\projects\neolace\neolace\main.cpp(357): warning C4101: 'tmp': unreferenced local variable
 c:\users\dar zaccaro\projects\neolace\neolace\noise.cpp(19): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
 c:\users\dar zaccaro\projects\neolace\neolace\noise.cpp(20): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
 c:\users\dar zaccaro\projects\neolace\neolace\noise.cpp(27): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
 c:\users\dar zaccaro\projects\neolace\neolace\noise.cpp(28): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+c:\users\dar zaccaro\projects\neolace\neolace\vao.cpp(111): warning C4018: '<': signed/unsigned mismatch
+c:\users\dar zaccaro\projects\neolace\neolace\vao.cpp(120): warning C4018: '<': signed/unsigned mismatch
+c:\users\dar zaccaro\projects\neolace\neolace\vao.cpp(129): warning C4018: '<': signed/unsigned mismatch
+c:\users\dar zaccaro\projects\neolace\neolace\vao.cpp(148): warning C4267: 'argument': conversion from 'size_t' to 'GLsizei', possible loss of data
   neolace.vcxproj -> C:\Users\Dar Zaccaro\Projects\neolace\x64\Debug\neolace.exe
