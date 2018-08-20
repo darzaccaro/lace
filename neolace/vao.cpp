@@ -25,12 +25,6 @@ Vao::Vao(const char* obj_path, Shader *shaders[], uint num_shaders) {
 		else if (strcmp(line_prefix, "vn") == 0) {
 			glm::vec3 n;
 			fscanf(fp, "%f %f %f\n", &n.x, &n.y, &n.z);
-			/* bool unique = true;
-						for (auto nml : normals) {
-							if (nml == n) unique = false;
-						}
-						if (unique) tmp_normals.push_back(n);
-			*/
 			tmp_normals.push_back(n);
 		}
 		else if (strcmp(line_prefix, "f") == 0) {
@@ -66,41 +60,7 @@ Vao::Vao(const char* obj_path, Shader *shaders[], uint num_shaders) {
 		uvs.push_back(uv);
 		normals.push_back(normal);
 	}
-	/*
 
-
-	int i = 0;
-	for (auto v: vertices) {
-		vertex_array[i] = v.x;
-		vertex_array[i + 1] = v.y;
-		vertex_array[i + 2] = v.z;
-		i += 3;
-	}
-	assert(i < MAX_VAO_ARRAY_SIZE);
-	vertex_array_size = (i - 3) * sizeof(float);
-
-	num_indices = i / 3;
-		
-	i = 0;
-	for (auto v: uvs) {
-		uv_array[i] = v.x;
-		uv_array[i + 1] = v.y;
-		i += 2;
-	}	
-	assert(i < MAX_VAO_ARRAY_SIZE);
-	uv_array_size = (i - 2) * sizeof(float);
-		
-	// TODO: why are there more normals than vertices??? our indices are wrong
-	i = 0;
-	for (auto v: tmp_normals) {
-		normal_array[i] = v.x;
-		normal_array[i + 1] = v.y;
-		normal_array[i + 2] = v.z;
-		i += 3;
-	}
-	assert(i < MAX_VAO_ARRAY_SIZE);
-	normal_array_size = (i - 3) * sizeof(float);
-	*/	
 	glGenVertexArrays(1, &id);
 	glBindVertexArray(id);
 
@@ -143,7 +103,9 @@ void Vao::bind()
 	glBindVertexArray(id);
 }
 
-void Vao::draw(Shader *s)
+void Vao::draw()
 {	
+	glBindVertexArray(id);
 	glDrawArrays(GL_TRIANGLES, 0, vertices.size());
+	glBindVertexArray(0);
 }

@@ -117,11 +117,14 @@ int main(int argc, char *argv[]) {
 	shaders[SN_BRIGHTNESS_MASK] = &Shader("quad.vert", "brightness_mask.frag");
 	shaders[SN_BLUR] = &Shader("quad.vert", "blur.frag");
 
-	auto icosphere_vao = Vao("models/sphere.obj", shaders, SN_MAX);
+	// TODO: fix sphere's origin to be at center! m,
+	auto sphere_vao = Vao("models/sphere.obj", shaders, SN_MAX); 
+	auto cube_vao = Vao("models/cube.obj", shaders, SN_MAX);
+	auto plane_vao = Vao("models/plane.obj", shaders, SN_MAX);
+	// TODO: export a plane from blender
 
-	
-	GLuint plane_vao;
-	GLfloat plane_data[] = {
+	GLuint quad_vao; // NOTE: a quad is different from a plane!
+	GLfloat quad_data[] = {
 		// position        //uv
 		-1.0f, 1.0f, 0.0f, 0.0f, 0.0f,
 		1.0f, 1.0f, 0.0f, 1.0f, 0.0f,
@@ -131,13 +134,13 @@ int main(int argc, char *argv[]) {
 		1.0f, -1.0f, 0.0f, 1.0f, 1.0f,
 		1.0f, 1.0f, 0.0f, 1.0f, 0.0f,
 	};
-	glGenVertexArrays(1, &plane_vao);
-	glBindVertexArray(plane_vao);
+	glGenVertexArrays(1, &quad_vao);
+	glBindVertexArray(quad_vao);
 	{ // todo add normals
 		GLuint position_vbo;
 		glGenBuffers(1, &position_vbo);
 		glBindBuffer(GL_ARRAY_BUFFER, position_vbo);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(plane_data), plane_data, GL_STATIC_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(quad_data), quad_data, GL_STATIC_DRAW);
 		for (Shader* s : shaders) {
 			glEnableVertexAttribArray(glGetAttribLocation(s->program, "position"));
 			glVertexAttribPointer(glGetAttribLocation(s->program, "position"), 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (void*)0);
@@ -146,7 +149,7 @@ int main(int argc, char *argv[]) {
 		GLuint texcoord_vbo;
 		glGenBuffers(1, &texcoord_vbo);
 		glBindBuffer(GL_ARRAY_BUFFER, texcoord_vbo);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(plane_data), plane_data, GL_STATIC_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(quad_data), quad_data, GL_STATIC_DRAW);
 		for (Shader* s : shaders) {
 			glEnableVertexAttribArray(glGetAttribLocation(s->program, "texcoord"));
 			glVertexAttribPointer(glGetAttribLocation(s->program, "texcoord"), 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (void*)(3 * sizeof(GLfloat))); // automatically do these for each shader!!!!!!!!!
@@ -156,92 +159,7 @@ int main(int argc, char *argv[]) {
 		glBindVertexArray(0);
 	}
 
-	GLfloat cube_data[] = {
-		//  X     Y     Z       U     V          Normal
-		// bottom
-		-1.0f,-1.0f,-1.0f,   0.0f, 0.0f,   0.0f, -1.0f, 0.0f,
-		1.0f,-1.0f,-1.0f,   1.0f, 0.0f,   0.0f, -1.0f, 0.0f,
-		-1.0f,-1.0f, 1.0f,   0.0f, 1.0f,   0.0f, -1.0f, 0.0f,
-		1.0f,-1.0f,-1.0f,   1.0f, 0.0f,   0.0f, -1.0f, 0.0f,
-		1.0f,-1.0f, 1.0f,   1.0f, 1.0f,   0.0f, -1.0f, 0.0f,
-		-1.0f,-1.0f, 1.0f,   0.0f, 1.0f,   0.0f, -1.0f, 0.0f,
 
-		// top
-		-1.0f, 1.0f,-1.0f,   0.0f, 0.0f,   0.0f, 1.0f, 0.0f,
-		-1.0f, 1.0f, 1.0f,   0.0f, 1.0f,   0.0f, 1.0f, 0.0f,
-		1.0f, 1.0f,-1.0f,   1.0f, 0.0f,   0.0f, 1.0f, 0.0f,
-		1.0f, 1.0f,-1.0f,   1.0f, 0.0f,   0.0f, 1.0f, 0.0f,
-		-1.0f, 1.0f, 1.0f,   0.0f, 1.0f,   0.0f, 1.0f, 0.0f,
-		1.0f, 1.0f, 1.0f,   1.0f, 1.0f,   0.0f, 1.0f, 0.0f,
-
-		// front
-		-1.0f,-1.0f, 1.0f,   1.0f, 0.0f,   0.0f, 0.0f, 1.0f,
-		1.0f,-1.0f, 1.0f,   0.0f, 0.0f,   0.0f, 0.0f, 1.0f,
-		-1.0f, 1.0f, 1.0f,   1.0f, 1.0f,   0.0f, 0.0f, 1.0f,
-		1.0f,-1.0f, 1.0f,   0.0f, 0.0f,   0.0f, 0.0f, 1.0f,
-		1.0f, 1.0f, 1.0f,   0.0f, 1.0f,   0.0f, 0.0f, 1.0f,
-		-1.0f, 1.0f, 1.0f,   1.0f, 1.0f,   0.0f, 0.0f, 1.0f,
-
-		// back
-		-1.0f,-1.0f,-1.0f,   0.0f, 0.0f,   0.0f, 0.0f, -1.0f,
-		-1.0f, 1.0f,-1.0f,   0.0f, 1.0f,   0.0f, 0.0f, -1.0f,
-		1.0f,-1.0f,-1.0f,   1.0f, 0.0f,   0.0f, 0.0f, -1.0f,
-		1.0f,-1.0f,-1.0f,   1.0f, 0.0f,   0.0f, 0.0f, -1.0f,
-		-1.0f, 1.0f,-1.0f,   0.0f, 1.0f,   0.0f, 0.0f, -1.0f,
-		1.0f, 1.0f,-1.0f,   1.0f, 1.0f,   0.0f, 0.0f, -1.0f,
-
-		// left
-		-1.0f,-1.0f, 1.0f,   0.0f, 1.0f,   -1.0f, 0.0f, 0.0f,
-		-1.0f, 1.0f,-1.0f,   1.0f, 0.0f,   -1.0f, 0.0f, 0.0f,
-		-1.0f,-1.0f,-1.0f,   0.0f, 0.0f,   -1.0f, 0.0f, 0.0f,
-		-1.0f,-1.0f, 1.0f,   0.0f, 1.0f,   -1.0f, 0.0f, 0.0f,
-		-1.0f, 1.0f, 1.0f,   1.0f, 1.0f,   -1.0f, 0.0f, 0.0f,
-		-1.0f, 1.0f,-1.0f,   1.0f, 0.0f,   -1.0f, 0.0f, 0.0f,
-
-		// right
-		1.0f,-1.0f, 1.0f,   1.0f, 1.0f,   1.0f, 0.0f, 0.0f,
-		1.0f,-1.0f,-1.0f,   1.0f, 0.0f,   1.0f, 0.0f, 0.0f,
-		1.0f, 1.0f,-1.0f,   0.0f, 0.0f,   1.0f, 0.0f, 0.0f,
-		1.0f,-1.0f, 1.0f,   1.0f, 1.0f,   1.0f, 0.0f, 0.0f,
-		1.0f, 1.0f,-1.0f,   0.0f, 0.0f,   1.0f, 0.0f, 0.0f,
-		1.0f, 1.0f, 1.0f,   0.0f, 1.0f,   1.0f, 0.0f, 0.0f
-	};
-
-	GLuint cube_vao;
-	glGenVertexArrays(1, &cube_vao);
-	glBindVertexArray(cube_vao);
-	{
-		// TODO: automatically enable these vertex attrib pointers for each shader in your engine!
-		GLuint position_vbo;
-		glGenBuffers(1, &position_vbo);
-		glBindBuffer(GL_ARRAY_BUFFER, position_vbo);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(cube_data), cube_data, GL_STATIC_DRAW);
-		for (Shader* s : shaders) {
-			glEnableVertexAttribArray(glGetAttribLocation(s->program, "position"));
-			glVertexAttribPointer(glGetAttribLocation(s->program, "position"), 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)0);
-		}
-
-		GLuint texcoord_vbo;
-		glGenBuffers(1, &texcoord_vbo);
-		glBindBuffer(GL_ARRAY_BUFFER, texcoord_vbo);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(cube_data), cube_data, GL_STATIC_DRAW);
-		for (Shader* s : shaders) {
-			glEnableVertexAttribArray(glGetAttribLocation(s->program, "texcoord"));
-			glVertexAttribPointer(glGetAttribLocation(s->program, "texcoord"), 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)(3 * sizeof(GLfloat)));
-		}
-
-		GLuint norml_vbo;
-		glGenBuffers(1, &norml_vbo);
-		glBindBuffer(GL_ARRAY_BUFFER, norml_vbo);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(cube_data), cube_data, GL_STATIC_DRAW);
-		for (Shader* s : shaders) {
-			glEnableVertexAttribArray(glGetAttribLocation(s->program, "norml"));
-			glVertexAttribPointer(glGetAttribLocation(s->program, "norml"), 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)(5 * sizeof(GLfloat)));
-		}
-
-		glBindBuffer(GL_ARRAY_BUFFER, 0);
-		glBindVertexArray(0);
-	}
 
 	GLuint post_fbo, post_fbo_depth_buffer;
 	glGenFramebuffers(1, &post_fbo);
@@ -331,11 +249,18 @@ int main(int argc, char *argv[]) {
 	light.diffuse = vec3(0.5f, 0.5f, 0.5f);
 	light.specular = vec3(1.0f, 1.0f, 1.0f);
 
-	Material material;
-	material.ambient = vec3(1.0f, 0.5f, 0.31f);
-	material.diffuse = vec3(1.0f, 0.5f, 0.31f);
-	material.specular = vec3(0.5f, 0.5f, 0.5f);
-	material.shine = 64;
+	// TODO: read materials from blender!
+	Material default_material;
+	default_material.ambient = vec3(1.0f, 0.5f, 0.31f);
+	default_material.diffuse = vec3(1.0f, 0.5f, 0.31f);
+	default_material.specular = vec3(0.5f, 0.5f, 0.5f);
+	default_material.shine = 64;
+
+	Material other_material;
+	other_material.ambient = vec3(0.4f, 0.2f, 0.31f);
+	other_material.diffuse = vec3(0.4f, 0.2f, 0.31f);
+	other_material.specular = vec3(0.25f, 0.25f, 0.25f);
+	other_material.shine = 8;
 
 	for (;;) {
 		SDL_Event event;
@@ -395,7 +320,7 @@ int main(int argc, char *argv[]) {
 		}
 		glDisable(GL_DEPTH_TEST);
 		shaders[SN_BACKGROUND]->use();
-		glBindVertexArray(plane_vao);// TODO: implement as vao.bind()
+		glBindVertexArray(quad_vao);// TODO: implement as vao.bind()
 		shaders[SN_BACKGROUND]->set_uniform("resolution", vec2((float)window_width, (float)window_height));
 		shaders[SN_BACKGROUND]->set_uniform("frame_count", frame_count);
 		shaders[SN_BACKGROUND]->set_uniform("scene", scene);
@@ -405,9 +330,7 @@ int main(int argc, char *argv[]) {
 		glEnable(GL_DEPTH_TEST); // todo: renderer.enable(GL_DEPTH_TEST); might be overengineering
 		glClear(GL_DEPTH_BUFFER_BIT); // TODO: renderer.clear(GL_COLOR_BUIFFER_BIT | GL_DEPTH_BUFFER_TEST), etc...
 		shaders[SN_CUBE]->use();
-		//glBindVertexArray(cube_vao);
-		icosphere_vao.bind();
-		shaders[SN_CUBE]->set_uniform("material", material);
+		shaders[SN_CUBE]->set_uniform("material", default_material);
 		shaders[SN_CUBE]->set_uniform("light", light);
 		shaders[SN_CUBE]->set_uniform("resolution", vec2((float)window_width, (float)window_height));
 		shaders[SN_CUBE]->set_uniform("frame_count", frame_count);
@@ -434,39 +357,30 @@ int main(int argc, char *argv[]) {
 				
 				shaders[SN_CUBE]->set_uniform("model", m);
 				shaders[SN_CUBE]->set_uniform("brightness", perlin2d(float(i), float(ii), 0.1f, 4));
-				//glDrawArrays(GL_TRIANGLES, 0, 36);
-				icosphere_vao.draw(shaders[SN_CUBE]);
+				cube_vao.draw();
 			}
 		}
-
-		//right side of tunnel
-		/*
-		for (int i = 0; i < maxiter * 16; i++) {
-
-			for (int ii = 0; ii < maxiter; ii++) {
-
-				mat4 m = translate(model_a, vec3(3.0f * float(i), 8.0f * float(ii), -sin(float(ii * 0.8f)) * 32.0f));
-				m = scale(m, vec3(4.0f * perlin2d(float(i), float(ii), 0.2f, 4)));
-
-				set_uniform_mat4(cube_program, "model", m);
-				set_uniform_float(cube_program, "brightness", perlin2d(float(i), float(ii), 0.1f, 4));
-				glDrawArrays(GL_TRIANGLES, 0, 36);
-			}
-		}
-		*/
-		// TODO use a different shader for this cube
+		
 		{
-			icosphere_vao.bind();
 			mat4 m = model_a;
-			m = translate(m, vec3(64.0f, 40.0f, -48.0f));
+			m = translate(m, vec3(0.0f, 0.0f, 0.0f));
+			m = scale(m, vec3(128.0f, 0.0, 128.0f));
+			shaders[SN_CUBE]->set_uniform("model", m);
+			shaders[SN_CUBE]->set_uniform("material", other_material);
+			shaders[SN_CUBE]->set_uniform("brightness", 0.5f);
+			plane_vao.draw();
+		}
+
+		{
+			mat4 m = model_a;
+			m = translate(m, vec3(0.f, 24.f, 0.f));
 			m = rotate(m, radians(t), vec3(1.0f, 1.0f, 0.0f));
 			m = scale(m, vec3(24.0f, 24.0f, 24.0f));
 
 			shaders[SN_CUBE]->set_uniform("model", m);
-			shaders[SN_CUBE]->set_uniform("brightness", 4.0f);
+			shaders[SN_CUBE]->set_uniform("brightness", 2.0f);
 
-			//			glDrawArrays(GL_TRIANGLES, 0, 36);
-			icosphere_vao.draw(shaders[SN_CUBE]);
+			cube_vao.draw();
 		}
 
 		// post processing ----------------------------------
@@ -480,7 +394,7 @@ int main(int argc, char *argv[]) {
 
 
 			glDisable(GL_DEPTH_TEST);
-			glBindVertexArray(plane_vao);
+			glBindVertexArray(quad_vao);
 			// render brightness mask from post texture to brightness texture
 			glBindFramebuffer(GL_FRAMEBUFFER, brightness_mask_fbo);
 			shaders[SN_BRIGHTNESS_MASK]->use();
@@ -515,7 +429,7 @@ int main(int argc, char *argv[]) {
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 			glDisable(GL_DEPTH_TEST);
 			shaders[SN_POST]->use();
-			glBindVertexArray(plane_vao);
+			glBindVertexArray(quad_vao);
 			glBindTexture(GL_TEXTURE_2D, post_texture);
 			glDrawArrays(GL_TRIANGLES, 0, 6);
 		}

@@ -6,7 +6,7 @@ Camera::Camera(int window_width, int window_height)
 	far_clipping_plane = 100000.0f;
 	field_of_view = 45.0f;
 	speed = 2.0f;
-	position = vec3(0.0f, 0.0f, -3.0f);
+	position = vec3(0.0f, 0.0f, -32.0f);
 	target = vec3(0.0f, 0.0f, 0.0f);
 	front = normalize(position - target);
 	auto tmp_up = vec3(0.0f, 1.0f, 0.0f);

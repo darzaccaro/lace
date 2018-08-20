@@ -8,6 +8,6 @@ struct Vao {
 	
 	Vao(const char* path_to_obj_file, Shader *shaders[], uint num_shaders);
 	void bind();
-	void draw(Shader *shader);
+	void draw();
 
 };
