@@ -303,6 +303,8 @@ int main(int argc, char *argv[]) {
 			current_time = SDL_GetTicks();
 		} while (current_time - last_time < 16);
 		const u8* keystate = SDL_GetKeyboardState(NULL);
+
+		//camera.look_at(vec3(0.0f, 0.0f, 0.0f));
 		// RENDER
 		glBindFramebuffer(GL_FRAMEBUFFER, msaa_fbo); // todo: msaa in the post_fbo??
 
@@ -310,7 +312,7 @@ int main(int argc, char *argv[]) {
 		if (frame_count == 0) {
 			model_a = mat4(1.0f);
 		}
-		camera.update(window_width, window_height, keystate);
+		camera.update(window, window_width, window_height, keystate, fullscreen);
 		light.position = vec4(57.648369, 34.234070, -54.256927, 1.0); // if w == 0.0, this is a directional light
 		static bool did_once = false;
 		if (!did_once) {
@@ -357,13 +359,16 @@ int main(int argc, char *argv[]) {
 				
 				shaders[SN_CUBE]->set_uniform("model", m);
 				shaders[SN_CUBE]->set_uniform("brightness", perlin2d(float(i), float(ii), 0.1f, 4));
-				cube_vao.draw();
+				if (i % 2 == 0)
+					cube_vao.draw();
+				else
+					sphere_vao.draw();
 			}
 		}
 		
 		{
 			mat4 m = model_a;
-			m = translate(m, vec3(0.0f, 0.0f, 0.0f));
+			m = translate(m, vec3(0.0f, 0.0f, -2.0f));
 			m = scale(m, vec3(128.0f, 0.0, 128.0f));
 			shaders[SN_CUBE]->set_uniform("model", m);
 			shaders[SN_CUBE]->set_uniform("material", other_material);
