@@ -313,10 +313,11 @@ int main(int argc, char *argv[]) {
 			model_a = mat4(1.0f);
 		}
 		camera.update(window, window_width, window_height, keystate, fullscreen);
-		light.position = vec4(57.648369, 34.234070, -54.256927, 1.0); // if w == 0.0, this is a directional light
+		light.position = vec4(-2.0f, 32.0f, -8.0f, 1.0f); // if w == 0.0, this is a directional light
 		static bool did_once = false;
 		if (!did_once) {
 			//camera.position = vec3(271.979553, -4.139664, 113.563263);
+			camera.position = vec3(0.0f, 4.0f, 124.0f);
 			//camera.front = vec3(-0.034846, 0.990268, -0.134740); // TODO: why doesn't this work???
 			did_once = true;
 		}
@@ -354,7 +355,7 @@ int main(int argc, char *argv[]) {
 
 			for (int ii = 0; ii < maxiter; ii++) {
 				
-				mat4 m = translate(model_a, vec3(4.0f * float(i), 8.0f * float(ii), sin(float(ii * 0.2f)) * 32.0f));
+				mat4 m = translate(model_a, vec3(4.0f * float(i), 8.0f * float(ii), -sin(float(ii * 0.2f)) * 32.0f));
 				m = scale(m, vec3(2.0f * perlin2d(float(i), float(ii), 0.8f, 4)));
 				
 				shaders[SN_CUBE]->set_uniform("model", m);
@@ -368,7 +369,7 @@ int main(int argc, char *argv[]) {
 		
 		{
 			mat4 m = model_a;
-			m = translate(m, vec3(0.0f, 0.0f, -2.0f));
+			m = translate(m, vec3(0.0f, 0.0f, 0.0f));
 			m = scale(m, vec3(128.0f, 0.0, 128.0f));
 			shaders[SN_CUBE]->set_uniform("model", m);
 			shaders[SN_CUBE]->set_uniform("material", other_material);
@@ -378,12 +379,24 @@ int main(int argc, char *argv[]) {
 
 		{
 			mat4 m = model_a;
-			m = translate(m, vec3(0.f, 24.f, 0.f));
+			m = translate(m, vec3(0.0f, 0.0f, -128.0f)); //TODO is our z-axis reversed somehow???
+			m = scale(m, vec3(64.0f, 64.0f, 64.0f));
+			shaders[SN_CUBE]->set_uniform("model", m);
+			shaders[SN_CUBE]->set_uniform("material", other_material);
+			shaders[SN_CUBE]->set_uniform("brightness", 0.1f);
+			sphere_vao.draw();
+		}
+
+		{
+			mat4 m = model_a;
+			m = translate(m, vec3(24.f, 24.f, -24.f));
 			m = rotate(m, radians(t), vec3(1.0f, 1.0f, 0.0f));
-			m = scale(m, vec3(24.0f, 24.0f, 24.0f));
+
+			
+			m = scale(m, vec3(4.0f, 4.0f, 4.0f));
 
 			shaders[SN_CUBE]->set_uniform("model", m);
-			shaders[SN_CUBE]->set_uniform("brightness", 2.0f);
+			shaders[SN_CUBE]->set_uniform("brightness", 0.8f);
 
 			cube_vao.draw();
 		}

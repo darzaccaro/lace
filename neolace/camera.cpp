@@ -62,7 +62,7 @@ Camera::Camera(int window_width, int window_height)
 	speed = 2.0f;
 	position = vec3(0.0f, 0.0f, 2.0f);
 	target = vec3(0.0f, 0.0f, 0.0f);
-	front = normalize(position - target);
+	front = normalize(target - position);
 	auto tmp_up = vec3(0.0f, 1.0f, 0.0f);
 	right = normalize(cross(tmp_up, front));
 	up = cross(front, right);
@@ -98,6 +98,7 @@ void Camera::update(SDL_Window *window, int window_width, int window_height, con
 		front.y += sin(radians(pitch));
 		front.z += cos(radians(pitch)) * sin(radians(yaw));
 		front = normalize(front);
+		// TODO also clamp mouse to window edges here
 	} else {
 		if (!first_press) {
 			if (!fullscreen) {
