@@ -57,7 +57,7 @@ Camera::Camera(int window_width, int window_height)
 	pitch = 0;
 	yaw = 0;
 	near_clipping_plane = 0.1f;
-	far_clipping_plane = 1000.0f;
+	far_clipping_plane = 10000.0f;
 	field_of_view = 45.0f;
 	speed = 2.0f;
 	position = vec3(0.0f, 0.0f, 2.0f);

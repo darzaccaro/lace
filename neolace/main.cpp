@@ -107,7 +107,7 @@ int main(int argc, char *argv[]) {
 	glViewport(0, 0, window_width, window_height);
 	glClearColor(0.2456f, 0.5432f, 0.23f, 1.0f);
 
-	enum Shader_Name { SN_BACKGROUND, SN_CUBE, SN_POST, SN_FXAA, SN_ADD_TEXTURES, SN_BRIGHTNESS_MASK, SN_BLUR, SN_MAX };
+	enum Shader_Name { SN_BACKGROUND, SN_CUBE, SN_POST, SN_FXAA, SN_ADD_TEXTURES, SN_BRIGHTNESS_MASK, SN_BLUR, SN_MIRROR, SN_MAX };
 	Shader *shaders[SN_MAX];
 	shaders[SN_BACKGROUND] = &Shader("background.vert", "background.frag");
 	shaders[SN_CUBE] = &Shader("cube.vert", "cube.frag");
@@ -116,6 +116,7 @@ int main(int argc, char *argv[]) {
 	shaders[SN_ADD_TEXTURES] = &Shader("quad.vert", "add_textures.frag");
 	shaders[SN_BRIGHTNESS_MASK] = &Shader("quad.vert", "brightness_mask.frag");
 	shaders[SN_BLUR] = &Shader("quad.vert", "blur.frag");
+	shaders[SN_MIRROR] = &Shader("quad.vert", "mirror.frag");
 
 	// TODO: fix sphere's origin to be at center! m,
 	auto sphere_vao = Vao("models/sphere.obj", shaders, SN_MAX); 
@@ -177,6 +178,26 @@ int main(int argc, char *argv[]) {
 	glBindRenderbuffer(GL_RENDERBUFFER, post_fbo_depth_buffer);
 	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, window_width, window_height);
 	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, post_fbo_depth_buffer);
+	glBindTexture(GL_TEXTURE_2D, 0);
+	glBindRenderbuffer(GL_RENDERBUFFER, 0);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	GLuint mirror_fbo, mirror_fbo_depth_buffer;
+	glGenFramebuffers(1, &mirror_fbo);
+	glBindFramebuffer(GL_FRAMEBUFFER, mirror_fbo);
+	GLuint mirror_texture;
+	glGenTextures(1, &mirror_texture);
+	glBindTexture(GL_TEXTURE_2D, mirror_texture);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, window_width, window_height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, mirror_texture, 0);
+	glGenRenderbuffers(1, &mirror_fbo_depth_buffer);
+	glBindRenderbuffer(GL_RENDERBUFFER, mirror_fbo_depth_buffer);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, window_width, window_height);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, mirror_fbo_depth_buffer);
 	glBindTexture(GL_TEXTURE_2D, 0);
 	glBindRenderbuffer(GL_RENDERBUFFER, 0);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -313,14 +334,17 @@ int main(int argc, char *argv[]) {
 			model_a = mat4(1.0f);
 		}
 		camera.update(window, window_width, window_height, keystate, fullscreen);
-		light.position = vec4(-2.0f, 32.0f, -8.0f, 1.0f); // if w == 0.0, this is a directional light
+		light.position = vec4(camera.position, 1.0f); // if w == 0.0, this is a directional light
 		static bool did_once = false;
 		if (!did_once) {
 			//camera.position = vec3(271.979553, -4.139664, 113.563263);
-			camera.position = vec3(0.0f, 4.0f, 124.0f);
+			//camera.position = vec3(0.0f, 4.0f, 124.0f);
+			camera.position = vec3(-453.821167, 865.267334, -2387.491455);
+			camera.front = vec3(0.199234, -0.390731, 0.898685);
 			//camera.front = vec3(-0.034846, 0.990268, -0.134740); // TODO: why doesn't this work???
 			did_once = true;
 		}
+		camera.position += 0.5f * camera.front;
 		glDisable(GL_DEPTH_TEST);
 		shaders[SN_BACKGROUND]->use();
 		glBindVertexArray(quad_vao);// TODO: implement as vao.bind()
@@ -344,61 +368,54 @@ int main(int argc, char *argv[]) {
 		shaders[SN_CUBE]->set_uniform("view", camera.view);
 		shaders[SN_CUBE]->set_uniform("projection", camera.projection);
 
-		float t = float(frame_count * 0.2);
+		float t = float(frame_count * 0.02);
 		static int b = 0;
 		if ((frame_count % 10) == 0) {
 			b++;
 		}
 
-		const int maxiter = 8;
-		for (int i = 0; i < maxiter * 4; i++) {
+		{
+			mat4 rotm = rotate(model_a, radians(45.f), vec3(1.0f, 0.0f, 1.0f));
+			for (int i = 0; i < 64; i++) {
+				float row = i;
+			
+				for (int ii = 0; ii < 16; ii++) {
+					float row = i; float col = ii;
+					float z;
+					if (mod(t, sin(row * 10.0f)) <= 2.0f) z = -4.0f * row * col;
+					else z = -4.0f;
+				
+					mat4 m = translate(rotm, vec3(row * 8.0f * sin(row), col * 8.0f * sin(col), z));
 
-			for (int ii = 0; ii < maxiter; ii++) {
-				
-				mat4 m = translate(model_a, vec3(4.0f * float(i), 8.0f * float(ii), -sin(float(ii * 0.2f)) * 32.0f));
-				m = scale(m, vec3(2.0f * perlin2d(float(i), float(ii), 0.8f, 4)));
-				
-				shaders[SN_CUBE]->set_uniform("model", m);
-				shaders[SN_CUBE]->set_uniform("brightness", perlin2d(float(i), float(ii), 0.1f, 4));
-				if (i % 2 == 0)
+					m = scale(m, vec3(row * 2.0f + 1.0f, (col * 2.0f) + 2.0f, 10.0f + 40.0f  * abs(sin(4.0f)) * abs(sin(row)) * abs(cos(col))));
+								
+								
+					shaders[SN_CUBE]->set_uniform("model", m);
+					shaders[SN_CUBE]->set_uniform("brightness", 0.4f);
 					cube_vao.draw();
-				else
-					sphere_vao.draw();
+				}
 			}
+			
 		}
-		
+		/*
 		{
 			mat4 m = model_a;
-			m = translate(m, vec3(0.0f, 0.0f, 0.0f));
+			m = translate(m, vec3(0.0f, -2.0f, 0.0f));
 			m = scale(m, vec3(128.0f, 0.0, 128.0f));
 			shaders[SN_CUBE]->set_uniform("model", m);
 			shaders[SN_CUBE]->set_uniform("material", other_material);
 			shaders[SN_CUBE]->set_uniform("brightness", 0.5f);
 			plane_vao.draw();
 		}
-
+		*/
 		{
 			mat4 m = model_a;
 			m = translate(m, vec3(0.0f, 0.0f, -128.0f)); //TODO is our z-axis reversed somehow???
-			m = scale(m, vec3(64.0f, 64.0f, 64.0f));
+			m = scale(m, vec3(128.0f, 128.0f, 128.0f));
 			shaders[SN_CUBE]->set_uniform("model", m);
 			shaders[SN_CUBE]->set_uniform("material", other_material);
-			shaders[SN_CUBE]->set_uniform("brightness", 0.1f);
-			sphere_vao.draw();
-		}
-
-		{
-			mat4 m = model_a;
-			m = translate(m, vec3(24.f, 24.f, -24.f));
-			m = rotate(m, radians(t), vec3(1.0f, 1.0f, 0.0f));
-
-			
-			m = scale(m, vec3(4.0f, 4.0f, 4.0f));
-
-			shaders[SN_CUBE]->set_uniform("model", m);
 			shaders[SN_CUBE]->set_uniform("brightness", 0.8f);
-
-			cube_vao.draw();
+			sphere_vao.draw();
 		}
 
 		// post processing ----------------------------------
@@ -409,7 +426,6 @@ int main(int argc, char *argv[]) {
 			glBindFramebuffer(GL_READ_FRAMEBUFFER, msaa_fbo);
 			glBindFramebuffer(GL_DRAW_FRAMEBUFFER, post_fbo);
 			glBlitFramebuffer(0, 0, window_width, window_height, 0, 0, window_width, window_height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
-
 
 			glDisable(GL_DEPTH_TEST);
 			glBindVertexArray(quad_vao);
@@ -433,11 +449,23 @@ int main(int argc, char *argv[]) {
 			glDrawArrays(GL_TRIANGLES, 0, 6);
 			
 			// render add brightness to post and render to screen
-			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+			glBindFramebuffer(GL_FRAMEBUFFER, mirror_fbo);
 			shaders[SN_ADD_TEXTURES]->use();
 			shaders[SN_ADD_TEXTURES]->set_texture("tex0", post_texture, 0);
 			shaders[SN_ADD_TEXTURES]->set_texture("tex1", blur_textures[1], 1);
 			glDrawArrays(GL_TRIANGLES, 0, 6);
+			// TODO: a final color pass with pow(color, 2.0), color correction, gamma correction, etc...
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+			shaders[SN_MIRROR]->use();
+			shaders[SN_MIRROR]->set_texture("tex0", mirror_texture, 0);
+			shaders[SN_MIRROR]->set_uniform("resolution", vec2(float(window_width), float(window_height)));
+			shaders[SN_MIRROR]->set_uniform("num_splits", 4);
+			//shaders[SN_MIRROR]->set_uniform("cuts", 4);
+			glDrawArrays(GL_TRIANGLES, 0, 6);
+
+
+
+
 			// renderer.unbind(RO_Shader);
 			// renderer.unbind(RO_Vao);
 			// renderer.unbind(RO_Texture);
