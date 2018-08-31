@@ -19,6 +19,7 @@ void main() {
 	uv.x *= resolution.x / resolution.y;
 
 	vec3 c = -smoothstep(0.4, 4.0, vec3(distance(vec2(0.0), uv))) + vec3(0.6, 0.6, 0.6);
+	c = vec3(0.2);
 	//vec3 c = vec3(distance(vec2(0.0), uv));
 	frag_color = vec4(c, 1.0);
 }

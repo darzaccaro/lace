@@ -2,40 +2,33 @@
 
 uniform sampler2D tex0;
 uniform vec2 resolution;
-uniform int num_splits;
 in vec2 vert_texcoord;
 out vec4 frag_color;
 
 void main()
 {
+
 	float ar = (resolution.x/resolution.y);
-	vec4 c = vec4(0);
-	if (num_splits == 0) { // passthrough
-		c = texture(tex0, vert_texcoord);
-	} else if (num_splits == 2) { // split vertical
-		// northeast
-		if (vert_texcoord.x > 0.5)
-			c = texture(tex0, (1.0 - vec2((vert_texcoord.x * ar - 1.0) , vert_texcoord.y)));
-		// southwest
-		else if (vert_texcoord.x < 0.5)
-			c = texture(tex0, vec2((vert_texcoord.x * ar) , vert_texcoord.y));
-	} else if (num_splits == 4) {
-		// northeast
-		if (vert_texcoord.x > 0.5 && vert_texcoord.y > 0.5)
-			c = texture(tex0, 1.0 - vert_texcoord * 2.0 + 1.0);
-		// southwest
-		else if (vert_texcoord.x < 0.5 && vert_texcoord.y < 0.5)
-			c = texture(tex0, vert_texcoord * 2.0);
-		// northwest
-		else if (vert_texcoord.x < 0.5 && vert_texcoord.y > 0.5)
-			//c = texture(tex0, 1.0 - vec2(0.0, 1.0)  - (vert_texcoord * 2.0 + vec2(0.0, -1.0)) / 2.0);
-			c = texture(tex0, vec2(1.0, 1.0) - (vert_texcoord * 2.0 + vec2(0.0, -1.0)) / 4.0);
-		// southeast
-		else if (vert_texcoord.x > 0.5 && vert_texcoord.y < 0.5)
-			c = texture(tex0, vec2(1.0, 1.0) - (vert_texcoord * 2.0 + vec2(-1.0, 0.0)) / 2.0);
-			
-	}
+	vec4 col = vec4(0);
+
+		vec2 uv = gl_FragCoord.xy / resolution.xy;
+		vec4 c[4];
+		c[0] = texture(tex0, uv);
+		c[1] = texture(tex0, vec2(1.0-uv.x, uv.y));
+		c[2] = texture(tex0, vec2(uv.x, 1.0-uv.y));
+		c[3] = texture(tex0, vec2(1.0-uv.x, 1.0-uv.y));
+    
+		vec4 color = (uv.y >= 0.5 && uv.x >= 0.5) ? c[0] :
+			(uv.y >= 0.5 && uv.x < 0.5) ? c[1] :
+			(uv.y < 0.5 && uv.x >= 0.5) ? c[2] : c[3];
+    
+		vec4 d = max(c[0], c[1]);
+		d = max(d, c[2]);
+		d = max(d, c[3]);
+    
+    
+		col = vec4(mix(color.rgb, d.rgb, (color.rgb + d.rgb) * 0.5), 1.0); 
 
 	
-	frag_color = c;//pow(c, vec4(2.0));
+		frag_color = pow(col, vec4(2.0));//pow(c, vec4(2.0));
 }
