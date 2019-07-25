@@ -9,8 +9,9 @@ Features
 
 Screenshots
 -----------
-![screenshot1](screenshots/improved_mirroring.png)
-![screenshot2](https://imgur.com/Dx1jfwu)
-![screenshot3](https://imgur.com/b093Zbr)
-![screenshot4](https://imgur.com/MMMIclo)
-![screenshot5](https://imgur.com/QGn6fiB)
+![mirrored](screenshots/improved_mirroring.png)
+![4x](screenshots/quadtest.png)
+![bloom](screenshots/bloomtest.png)
+![green](screenshots/cubestest.png)
+![milk](screenshots/oj.png)
+
